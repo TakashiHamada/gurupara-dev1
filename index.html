@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>インタラクティブゲーム - GitHub Pages</title>
+    <title>パラパラ漫画パズル - GitHub Pages</title>
     <style>
         * {
             margin: 0;
@@ -27,7 +27,10 @@
             position: relative;
             width: 100%;
             height: 100%;
-            cursor: crosshair;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
         #info-panel {
@@ -41,6 +44,7 @@
             text-align: center;
             z-index: 100;
             backdrop-filter: blur(10px);
+            max-width: 90%;
         }
 
         h1 {
@@ -50,61 +54,33 @@
         }
 
         .instructions {
-            font-size: 1.1em;
+            font-size: 1em;
             margin-top: 10px;
             line-height: 1.6;
         }
 
-        .effect {
-            position: absolute;
-            pointer-events: none;
+        /* ロケット表示エリア */
+        #rocket-container {
+            width: 400px;
+            height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
-        /* スペースキーエフェクト用 */
-        .space-effect {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #ffd700;
-            border-radius: 50%;
-            animation: expandFade 1s ease-out forwards;
+        #rocket-img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
         }
 
-        @keyframes expandFade {
-            0% {
-                transform: scale(1);
-                opacity: 1;
-            }
-            100% {
-                transform: scale(8);
-                opacity: 0;
-            }
-        }
-
-        /* マウスクリックエフェクト用 */
-        .click-effect {
-            width: 40px;
-            height: 40px;
-            background: radial-gradient(circle, #ff6b6b, #feca57);
-            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-            animation: starBurst 0.8s ease-out forwards;
-        }
-
-        @keyframes starBurst {
-            0% {
-                transform: scale(0) rotate(0deg);
-                opacity: 1;
-            }
-            50% {
-                transform: scale(1.5) rotate(180deg);
-                opacity: 1;
-            }
-            100% {
-                transform: scale(0.5) rotate(360deg);
-                opacity: 0;
-            }
-        }
-
-        #stats {
+        /* フレーム情報 */
+        #frame-info {
             position: absolute;
             bottom: 20px;
             left: 50%;
@@ -112,135 +88,186 @@
             background: rgba(0, 0, 0, 0.7);
             padding: 15px 30px;
             border-radius: 10px;
-            display: flex;
-            gap: 30px;
             backdrop-filter: blur(10px);
+            font-size: 1.2em;
         }
 
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-label {
-            font-size: 0.9em;
-            opacity: 0.8;
-            margin-bottom: 5px;
-        }
-
-        .stat-value {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #ffd700;
-        }
-
-        /* ロケットアニメーション用 */
-        #rocket-container {
+        /* クリアメッセージ */
+        #clear-message {
             position: absolute;
-            bottom: 50px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
-            width: 200px;
-            height: 200px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 50;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 255, 100, 0.95);
+            color: white;
+            padding: 40px 60px;
+            border-radius: 20px;
+            font-size: 3em;
+            font-weight: bold;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 200;
+            animation: pulse 1s ease-in-out infinite;
         }
 
-        #rocket-img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+        @keyframes pulse {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.05);
+            }
         }
     </style>
 </head>
 <body>
     <div id="game-container">
         <div id="info-panel">
-            <h1>🎮 インタラクティブゲーム</h1>
+            <h1>🚀 パラパラ漫画パズル</h1>
             <div class="instructions">
-                <div>⌨️ <strong>スペースキー</strong>を押す → ロケット発射</div>
-                <div>🖱️ <strong>マウスクリック</strong> → ロケット発射</div>
+                <div>← / 右クリック：前のコマ　→ / 左クリック：次のコマ</div>
+                <div>スペースキー：答え合わせ</div>
+                <div>順番を並び替えてロケット発射を完成させよう！</div>
             </div>
         </div>
 
         <div id="rocket-container">
-            <img id="rocket-img" src="rocket_0.png" alt="Rocket">
+            <img id="rocket-img" src="" alt="Rocket">
         </div>
 
-        <div id="stats">
-            <div class="stat-item">
-                <div class="stat-label">スペースキー</div>
-                <div class="stat-value" id="space-count">0</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">クリック</div>
-                <div class="stat-value" id="click-count">0</div>
-            </div>
+        <div id="frame-info">
+            <span>現在のコマ: <span id="current-frame">1</span> / 9</span>
+        </div>
+
+        <div id="clear-message">
+            🎉 クリア！ 🎉
         </div>
     </div>
 
     <script>
-        const gameContainer = document.getElementById('game-container');
         const rocketImg = document.getElementById('rocket-img');
-        let spaceCount = 0;
-        let clickCount = 0;
+        const currentFrameDisplay = document.getElementById('current-frame');
+        const clearMessage = document.getElementById('clear-message');
+        const gameContainer = document.getElementById('game-container');
+
+        // 正解の順番
+        const correctOrder = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+        // シャッフルされた順番
+        let frameOrder = [];
+        // 現在表示しているインデックス
+        let currentIndex = 0;
+        // アニメーション中かどうか
         let isAnimating = false;
-        let currentFrame = 0;
-        let animationInterval = null;
 
-        // スペースキーが押された時の処理
-        document.addEventListener('keydown', (event) => {
-            if (event.code === 'Space') {
-                event.preventDefault(); // ページのスクロールを防ぐ
-                startRocketAnimation();
-                spaceCount++;
-                updateStats();
+        // 配列をシャッフルする関数
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
             }
-        });
+            return shuffled;
+        }
 
-        // マウスクリックされた時の処理
-        gameContainer.addEventListener('click', (event) => {
-            startRocketAnimation();
-            clickCount++;
-            updateStats();
-        });
+        // 配列が正解と同じかチェック
+        function isCorrectOrder(arr) {
+            return arr.every((val, index) => val === correctOrder[index]);
+        }
 
-        // ロケットアニメーションを開始
-        function startRocketAnimation() {
-            // 既にアニメーション中の場合は何もしない
-            if (isAnimating) {
-                return;
-            }
+        // ゲーム初期化
+        function initGame() {
+            // 正解と異なる順番になるまでシャッフル
+            do {
+                frameOrder = shuffleArray(correctOrder);
+            } while (isCorrectOrder(frameOrder));
+
+            currentIndex = 0;
+            updateDisplay();
+            console.log('シャッフルされた順番:', frameOrder);
+        }
+
+        // 表示を更新
+        function updateDisplay() {
+            const frameNumber = frameOrder[currentIndex];
+            rocketImg.src = `rocket_${frameNumber}.png`;
+            currentFrameDisplay.textContent = currentIndex + 1;
+        }
+
+        // 次のコマへ
+        function nextFrame() {
+            if (isAnimating) return;
+            currentIndex = (currentIndex + 1) % frameOrder.length;
+            updateDisplay();
+        }
+
+        // 前のコマへ
+        function prevFrame() {
+            if (isAnimating) return;
+            currentIndex = (currentIndex - 1 + frameOrder.length) % frameOrder.length;
+            updateDisplay();
+        }
+
+        // 答え合わせ
+        function checkAnswer() {
+            if (isAnimating) return;
 
             isAnimating = true;
-            currentFrame = 0;
-            rocketImg.src = `rocket_${currentFrame}.png`;
+            currentIndex = 0;
 
-            // 0.5秒（500ms）ごとにフレームを切り替え
-            animationInterval = setInterval(() => {
-                currentFrame++;
+            // アニメーション再生
+            const interval = setInterval(() => {
+                updateDisplay();
+                currentIndex++;
 
-                if (currentFrame <= 8) {
-                    rocketImg.src = `rocket_${currentFrame}.png`;
-                } else {
-                    // 最後のフレームに到達したらアニメーション停止
-                    clearInterval(animationInterval);
+                if (currentIndex >= frameOrder.length) {
+                    clearInterval(interval);
                     isAnimating = false;
+
+                    // 正解判定
+                    if (isCorrectOrder(frameOrder)) {
+                        clearMessage.style.display = 'block';
+                        console.log('クリア！正解です！');
+                    } else {
+                        console.log('不正解。正解:', correctOrder, '現在:', frameOrder);
+                        // 最初に戻る
+                        currentIndex = 0;
+                        updateDisplay();
+                    }
                 }
-            }, 500);
+            }, 200); // 0.2秒ごと
         }
 
-        // 統計情報を更新
-        function updateStats() {
-            document.getElementById('space-count').textContent = spaceCount;
-            document.getElementById('click-count').textContent = clickCount;
-        }
+        // キーボード操作
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'ArrowRight') {
+                event.preventDefault();
+                nextFrame();
+            } else if (event.code === 'ArrowLeft') {
+                event.preventDefault();
+                prevFrame();
+            } else if (event.code === 'Space') {
+                event.preventDefault();
+                checkAnswer();
+            }
+        });
 
-        // 初回メッセージ
-        console.log('🎮 ゲームが読み込まれました！');
-        console.log('🚀 スペースキーを押すか、画面をクリックしてロケットを発射！');
+        // 左クリック操作（次へ進む）
+        gameContainer.addEventListener('click', (event) => {
+            // クリアメッセージが表示されている場合は無視
+            if (clearMessage.style.display === 'block') return;
+            nextFrame();
+        });
+
+        // 右クリック操作（前へ戻る）
+        gameContainer.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+            prevFrame();
+        });
+
+        // ゲーム開始
+        initGame();
+        console.log('🚀 パラパラ漫画パズルが開始されました！');
+        console.log('順番を正しく並び替えて、スペースキーで答え合わせしてください。');
     </script>
 </body>
 </html>
