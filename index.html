@@ -77,6 +77,12 @@
             max-height: 90%;
             object-fit: contain;
             filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+            transition: transform 0.3s ease, filter 0.3s ease;
+        }
+
+        #rocket-img.grabbed {
+            transform: translateY(-50px);
+            filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8));
         }
 
         /* フレーム情報 */
@@ -126,8 +132,9 @@
             <h1>🚀 パラパラ漫画パズル</h1>
             <div class="instructions">
                 <div>← / 右クリック：前のコマ　→ / 左クリック：次のコマ</div>
-                <div>スペースキー：答え合わせ</div>
-                <div>順番を並び替えてロケット発射を完成させよう！</div>
+                <div>スペースキー：カードを掴む/離す</div>
+                <div>掴んだ状態で← →：カードの位置を入れ替え</div>
+                <div>エンターキー：答え合わせ</div>
             </div>
         </div>
 
@@ -158,6 +165,10 @@
         let currentIndex = 0;
         // アニメーション中かどうか
         let isAnimating = false;
+        // カードを掴んでいるかどうか
+        let isGrabbing = false;
+        // 掴んでいるカードの値
+        let grabbedCard = null;
 
         // 配列をシャッフルする関数
         function shuffleArray(array) {
@@ -188,9 +199,16 @@
 
         // 表示を更新
         function updateDisplay() {
-            const frameNumber = frameOrder[currentIndex];
+            const frameNumber = isGrabbing ? grabbedCard : frameOrder[currentIndex];
             rocketImg.src = `rocket_${frameNumber}.png`;
             currentFrameDisplay.textContent = currentIndex + 1;
+
+            // 掴んでいる状態の視覚的フィードバック
+            if (isGrabbing) {
+                rocketImg.classList.add('grabbed');
+            } else {
+                rocketImg.classList.remove('grabbed');
+            }
         }
 
         // 次のコマへ
@@ -204,6 +222,54 @@
         function prevFrame() {
             if (isAnimating) return;
             currentIndex = (currentIndex - 1 + frameOrder.length) % frameOrder.length;
+            updateDisplay();
+        }
+
+        // カードを掴む
+        function grabCard() {
+            if (isAnimating || isGrabbing) return;
+            isGrabbing = true;
+            grabbedCard = frameOrder[currentIndex];
+            // 配列から掴んだカードを削除
+            frameOrder.splice(currentIndex, 1);
+            // インデックスを調整
+            if (currentIndex >= frameOrder.length) {
+                currentIndex = frameOrder.length - 1;
+            }
+            updateDisplay();
+            console.log('カードを掴みました:', grabbedCard);
+        }
+
+        // カードを離す
+        function releaseCard() {
+            if (isAnimating || !isGrabbing) return;
+            // 現在の位置に掴んでいたカードを挿入
+            frameOrder.splice(currentIndex, 0, grabbedCard);
+            isGrabbing = false;
+            grabbedCard = null;
+            updateDisplay();
+            console.log('カードを離しました。現在の順番:', frameOrder);
+        }
+
+        // 掴んでいる状態で左へ移動
+        function moveGrabbedLeft() {
+            if (!isGrabbing) return;
+            if (currentIndex > 0) {
+                currentIndex--;
+            } else {
+                currentIndex = frameOrder.length; // 最後へ
+            }
+            updateDisplay();
+        }
+
+        // 掴んでいる状態で右へ移動
+        function moveGrabbedRight() {
+            if (!isGrabbing) return;
+            if (currentIndex < frameOrder.length) {
+                currentIndex++;
+            } else {
+                currentIndex = 0; // 最初へ
+            }
             updateDisplay();
         }
 
@@ -241,13 +307,30 @@
         document.addEventListener('keydown', (event) => {
             if (event.code === 'ArrowRight') {
                 event.preventDefault();
-                nextFrame();
+                if (isGrabbing) {
+                    moveGrabbedRight();
+                } else {
+                    nextFrame();
+                }
             } else if (event.code === 'ArrowLeft') {
                 event.preventDefault();
-                prevFrame();
+                if (isGrabbing) {
+                    moveGrabbedLeft();
+                } else {
+                    prevFrame();
+                }
             } else if (event.code === 'Space') {
                 event.preventDefault();
-                checkAnswer();
+                if (isGrabbing) {
+                    releaseCard();
+                } else {
+                    grabCard();
+                }
+            } else if (event.code === 'Enter') {
+                event.preventDefault();
+                if (!isGrabbing) {
+                    checkAnswer();
+                }
             }
         });
 
@@ -255,19 +338,29 @@
         gameContainer.addEventListener('click', (event) => {
             // クリアメッセージが表示されている場合は無視
             if (clearMessage.style.display === 'block') return;
-            nextFrame();
+
+            if (isGrabbing) {
+                moveGrabbedRight();
+            } else {
+                nextFrame();
+            }
         });
 
         // 右クリック操作（前へ戻る）
         gameContainer.addEventListener('contextmenu', (event) => {
             event.preventDefault();
-            prevFrame();
+            if (isGrabbing) {
+                moveGrabbedLeft();
+            } else {
+                prevFrame();
+            }
         });
 
         // ゲーム開始
         initGame();
         console.log('🚀 パラパラ漫画パズルが開始されました！');
-        console.log('順番を正しく並び替えて、スペースキーで答え合わせしてください。');
+        console.log('スペースキーでカードを掴んで、左右キーで位置を変更。');
+        console.log('スペースキーで離して、エンターキーで答え合わせ！');
     </script>
 </body>
 </html>
