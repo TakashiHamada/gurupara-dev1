@@ -132,6 +132,27 @@
             font-weight: bold;
             color: #ffd700;
         }
+
+        /* ロケットアニメーション用 */
+        #rocket-container {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+
+        #rocket-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+        }
     </style>
 </head>
 <body>
@@ -139,9 +160,13 @@
         <div id="info-panel">
             <h1>🎮 インタラクティブゲーム</h1>
             <div class="instructions">
-                <div>⌨️ <strong>スペースキー</strong>を押す → 円形エフェクト</div>
-                <div>🖱️ <strong>マウスクリック</strong> → 星形エフェクト</div>
+                <div>⌨️ <strong>スペースキー</strong>を押す → ロケット発射</div>
+                <div>🖱️ <strong>マウスクリック</strong> → ロケット発射</div>
             </div>
+        </div>
+
+        <div id="rocket-container">
+            <img id="rocket-img" src="rocket_0.png" alt="Rocket">
         </div>
 
         <div id="stats">
@@ -158,14 +183,18 @@
 
     <script>
         const gameContainer = document.getElementById('game-container');
+        const rocketImg = document.getElementById('rocket-img');
         let spaceCount = 0;
         let clickCount = 0;
+        let isAnimating = false;
+        let currentFrame = 0;
+        let animationInterval = null;
 
         // スペースキーが押された時の処理
         document.addEventListener('keydown', (event) => {
             if (event.code === 'Space') {
                 event.preventDefault(); // ページのスクロールを防ぐ
-                createSpaceEffect();
+                startRocketAnimation();
                 spaceCount++;
                 updateStats();
             }
@@ -173,43 +202,34 @@
 
         // マウスクリックされた時の処理
         gameContainer.addEventListener('click', (event) => {
-            createClickEffect(event.clientX, event.clientY);
+            startRocketAnimation();
             clickCount++;
             updateStats();
         });
 
-        // スペースキーのエフェクトを作成
-        function createSpaceEffect() {
-            const effect = document.createElement('div');
-            effect.className = 'effect space-effect';
+        // ロケットアニメーションを開始
+        function startRocketAnimation() {
+            // 既にアニメーション中の場合は何もしない
+            if (isAnimating) {
+                return;
+            }
 
-            // 画面中央に配置
-            effect.style.left = `${window.innerWidth / 2 - 25}px`;
-            effect.style.top = `${window.innerHeight / 2 - 25}px`;
+            isAnimating = true;
+            currentFrame = 0;
+            rocketImg.src = `rocket_${currentFrame}.png`;
 
-            gameContainer.appendChild(effect);
+            // 0.5秒（500ms）ごとにフレームを切り替え
+            animationInterval = setInterval(() => {
+                currentFrame++;
 
-            // アニメーション終了後に要素を削除
-            setTimeout(() => {
-                effect.remove();
-            }, 1000);
-        }
-
-        // クリックエフェクトを作成
-        function createClickEffect(x, y) {
-            const effect = document.createElement('div');
-            effect.className = 'effect click-effect';
-
-            // クリック位置に配置
-            effect.style.left = `${x - 20}px`;
-            effect.style.top = `${y - 20}px`;
-
-            gameContainer.appendChild(effect);
-
-            // アニメーション終了後に要素を削除
-            setTimeout(() => {
-                effect.remove();
-            }, 800);
+                if (currentFrame <= 8) {
+                    rocketImg.src = `rocket_${currentFrame}.png`;
+                } else {
+                    // 最後のフレームに到達したらアニメーション停止
+                    clearInterval(animationInterval);
+                    isAnimating = false;
+                }
+            }, 500);
         }
 
         // 統計情報を更新
@@ -220,7 +240,7 @@
 
         // 初回メッセージ
         console.log('🎮 ゲームが読み込まれました！');
-        console.log('スペースキーを押すか、画面をクリックしてみてください。');
+        console.log('🚀 スペースキーを押すか、画面をクリックしてロケットを発射！');
     </script>
 </body>
 </html>
