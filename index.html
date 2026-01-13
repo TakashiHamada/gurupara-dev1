@@ -146,7 +146,7 @@
             <h1>🚀 パラパラ漫画パズル</h1>
             <div class="instructions">
                 <div>← / 右クリック：前のコマ　→ / 左クリック：次のコマ</div>
-                <div>スペースキー：カードを掴む/離す</div>
+                <div>スペースキー長押し：カードを掴む（離すと配置）</div>
                 <div>掴んだ状態で← →：カードの位置を入れ替え</div>
                 <div>エンターキー：答え合わせ</div>
             </div>
@@ -345,15 +345,24 @@
                 }
             } else if (event.code === 'Space') {
                 event.preventDefault();
-                if (isGrabbing) {
-                    releaseCard();
-                } else {
+                // 押している間だけ掴む（連続発火を防ぐ）
+                if (!isGrabbing) {
                     grabCard();
                 }
             } else if (event.code === 'Enter') {
                 event.preventDefault();
                 if (!isGrabbing) {
                     checkAnswer();
+                }
+            }
+        });
+
+        // スペースキーを離したら配置
+        document.addEventListener('keyup', (event) => {
+            if (event.code === 'Space') {
+                event.preventDefault();
+                if (isGrabbing) {
+                    releaseCard();
                 }
             }
         });
