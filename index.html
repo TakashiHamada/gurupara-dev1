@@ -70,6 +70,7 @@
             border-radius: 20px;
             backdrop-filter: blur(10px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            position: relative;
         }
 
         #rocket-img {
@@ -77,12 +78,27 @@
             max-height: 90%;
             object-fit: contain;
             filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
-            transition: transform 0.3s ease, filter 0.3s ease;
+            transition: transform 0.3s ease, filter 0.3s ease, opacity 0.3s ease;
         }
 
         #rocket-img.grabbed {
-            transform: translateY(-50px);
+            transform: translateY(-250px);
             filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8));
+        }
+
+        /* 下のカード（掴んでいる時に表示） */
+        #bottom-card {
+            position: absolute;
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #bottom-card.visible {
+            opacity: 1;
         }
 
         /* フレーム情報 */
@@ -139,6 +155,7 @@
         </div>
 
         <div id="rocket-container">
+            <img id="bottom-card" src="" alt="Bottom Card">
             <img id="rocket-img" src="" alt="Rocket">
         </div>
 
@@ -153,6 +170,7 @@
 
     <script>
         const rocketImg = document.getElementById('rocket-img');
+        const bottomCard = document.getElementById('bottom-card');
         const currentFrameDisplay = document.getElementById('current-frame');
         const clearMessage = document.getElementById('clear-message');
         const gameContainer = document.getElementById('game-container');
@@ -199,16 +217,24 @@
 
         // 表示を更新
         function updateDisplay() {
-            const frameNumber = isGrabbing ? grabbedCard : frameOrder[currentIndex];
-            rocketImg.src = `rocket_${frameNumber}.png`;
-            currentFrameDisplay.textContent = currentIndex + 1;
-
-            // 掴んでいる状態の視覚的フィードバック
             if (isGrabbing) {
+                // 掴んでいる時：上に掴んだカード、下に次のカード
+                rocketImg.src = `rocket_${grabbedCard}.png`;
                 rocketImg.classList.add('grabbed');
+
+                // 下のカードを表示
+                const bottomFrameNumber = frameOrder[currentIndex];
+                bottomCard.src = `rocket_${bottomFrameNumber}.png`;
+                bottomCard.classList.add('visible');
             } else {
+                // 通常時：1つだけ表示
+                const frameNumber = frameOrder[currentIndex];
+                rocketImg.src = `rocket_${frameNumber}.png`;
                 rocketImg.classList.remove('grabbed');
+                bottomCard.classList.remove('visible');
             }
+
+            currentFrameDisplay.textContent = currentIndex + 1;
         }
 
         // 次のコマへ
