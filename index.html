@@ -220,10 +220,13 @@
                 rocketImg.src = `rocket_${grabbedCard}.png`;
                 rocketImg.classList.add('grabbed');
 
-                // 下のカードを表示
-                const bottomFrameNumber = frameOrder[currentIndex];
-                bottomCard.src = `rocket_${bottomFrameNumber}.png`;
-                bottomCard.classList.add('visible');
+                // 下のカードを表示（循環）
+                if (frameOrder.length > 0) {
+                    const bottomIndex = currentIndex % frameOrder.length;
+                    const bottomFrameNumber = frameOrder[bottomIndex];
+                    bottomCard.src = `rocket_${bottomFrameNumber}.png`;
+                    bottomCard.classList.add('visible');
+                }
             } else {
                 // 通常時：1つだけ表示
                 const frameNumber = frameOrder[currentIndex];
