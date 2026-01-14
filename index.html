@@ -59,17 +59,18 @@
         /* 操作説明パネル（モーダル） */
         #info-panel {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            bottom: 20px;
             background: rgba(0, 0, 0, 0.95);
-            padding: 30px 20px;
+            padding: 40px 30px;
             border-radius: 15px;
             text-align: center;
             z-index: 300;
             backdrop-filter: blur(10px);
-            max-width: 85%;
             display: none;
+            overflow-y: auto;
         }
 
         #info-panel.show {
@@ -77,8 +78,8 @@
         }
 
         #info-panel h1 {
-            margin-bottom: 15px;
-            font-size: 1.6em;
+            margin-bottom: 20px;
+            font-size: 2em;
         }
 
         /* 閉じるボタン */
@@ -125,13 +126,13 @@
         }
 
         .instructions {
-            font-size: 0.9em;
-            margin-top: 5px;
-            line-height: 1.5;
+            font-size: 1.2em;
+            margin-top: 10px;
+            line-height: 1.8;
         }
 
         .instructions div {
-            margin: 5px 0;
+            margin: 10px 0;
         }
 
         /* ロケット表示エリア */
