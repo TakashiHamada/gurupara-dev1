@@ -370,14 +370,14 @@
             const startIndex = currentIndex;
             let frameCount = 0;
 
-            // アニメーション再生（選択中のコマから1周）
+            // アニメーション再生（選択中のコマから2周）
             const interval = setInterval(() => {
                 updateDisplay();
                 frameCount++;
                 currentIndex = (startIndex + frameCount) % frameOrder.length;
 
-                // 1周終了
-                if (frameCount >= frameOrder.length) {
+                // 2周終了
+                if (frameCount >= frameOrder.length * 2) {
                     clearInterval(interval);
                     currentIndex = startIndex; // 開始位置に戻る
                     updateDisplay();
