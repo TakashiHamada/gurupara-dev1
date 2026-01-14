@@ -214,10 +214,6 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             position: relative;
         }
 
@@ -337,6 +333,23 @@
 
         /* スマホ用スタイル */
         @media (max-width: 768px) {
+            #rocket-container {
+                width: 100vw;
+                height: auto;
+            }
+
+            #rocket-img {
+                max-width: 100%;
+                width: 100%;
+                height: auto;
+            }
+
+            #bottom-card {
+                max-width: 100%;
+                width: 100%;
+                height: auto;
+            }
+
             #clear-message {
                 font-size: 2.5em;
                 padding: 30px 40px;
