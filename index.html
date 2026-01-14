@@ -185,6 +185,56 @@
         let isGrabbing = false;
         // 掴んでいるカードの値
         let grabbedCard = null;
+        // クリア済みかどうか
+        let isCleared = false;
+
+        // 効果音を生成する関数
+        function playCorrectSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+            // ピンポーン（E5 → C6）
+            const playTone = (frequency, startTime, duration) => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.frequency.value = frequency;
+                oscillator.type = 'sine';
+
+                gainNode.gain.setValueAtTime(0.3, startTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+
+                oscillator.start(startTime);
+                oscillator.stop(startTime + duration);
+            };
+
+            const now = audioContext.currentTime;
+            playTone(659.25, now, 0.15);        // E5
+            playTone(1046.50, now + 0.15, 0.3); // C6
+        }
+
+        function playIncorrectSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+            // ブー音
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 100; // 低い音
+            oscillator.type = 'sawtooth';
+
+            const now = audioContext.currentTime;
+            gainNode.gain.setValueAtTime(0.3, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+            oscillator.start(now);
+            oscillator.stop(now + 0.3);
+        }
 
         // 配列をシャッフルする関数
         function shuffleArray(array) {
@@ -306,28 +356,42 @@
 
             isAnimating = true;
             currentIndex = 0;
+            let loopCount = 0;
 
-            // アニメーション再生
+            // アニメーション再生（2周）
             const interval = setInterval(() => {
                 updateDisplay();
                 currentIndex++;
 
+                // 1周終わったらリセット
                 if (currentIndex >= frameOrder.length) {
-                    clearInterval(interval);
-                    isAnimating = false;
-
-                    // 正解判定
-                    if (isCorrectOrder(frameOrder)) {
-                        clearMessage.style.display = 'block';
-                        console.log('クリア！正解です！');
+                    loopCount++;
+                    if (loopCount < 2) {
+                        currentIndex = 0;
                     } else {
-                        console.log('不正解。正解:', correctOrder, '現在:', frameOrder);
-                        // 最初に戻る
+                        // 2周終了
+                        clearInterval(interval);
                         currentIndex = 0;
                         updateDisplay();
+
+                        // 1秒待ってから判定
+                        setTimeout(() => {
+                            isAnimating = false;
+
+                            // 正解判定
+                            if (isCorrectOrder(frameOrder)) {
+                                playCorrectSound();
+                                clearMessage.style.display = 'block';
+                                isCleared = true;
+                                console.log('クリア！正解です！');
+                            } else {
+                                playIncorrectSound();
+                                console.log('不正解。正解:', correctOrder, '現在:', frameOrder);
+                            }
+                        }, 1000);
                     }
                 }
-            }, 150); // 0.15秒ごと
+            }, 100); // 0.1秒ごと
         }
 
         // キーボード操作
@@ -354,7 +418,10 @@
                 }
             } else if (event.code === 'Enter') {
                 event.preventDefault();
-                if (!isGrabbing) {
+                if (isCleared) {
+                    // クリア済みならリロード
+                    location.reload();
+                } else if (!isGrabbing) {
                     checkAnswer();
                 }
             }
