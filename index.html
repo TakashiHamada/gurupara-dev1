@@ -283,7 +283,7 @@
             <h1>🚀 操作説明</h1>
             <div class="instructions">
                 <div>← →ボタン：コマ移動</div>
-                <div>掴むボタン長押し：カードを掴む</div>
+                <div>掴むボタン：カードを掴む/離す</div>
                 <div>掴んだ状態で← →：位置変更</div>
                 <div>✓ボタン：答え合わせ</div>
             </div>
@@ -623,39 +623,14 @@
             }
         });
 
-        // 掴むボタン（タッチダウン/タッチアップ対応）
-        btnGrab.addEventListener('mousedown', (event) => {
+        // 掴むボタン（トグル式）
+        btnGrab.addEventListener('click', (event) => {
             event.stopPropagation();
             if (!isGrabbing) {
                 grabCard();
                 btnGrab.textContent = '離す';
                 btnGrab.classList.add('grabbing');
-            }
-        });
-
-        btnGrab.addEventListener('touchstart', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            if (!isGrabbing) {
-                grabCard();
-                btnGrab.textContent = '離す';
-                btnGrab.classList.add('grabbing');
-            }
-        });
-
-        btnGrab.addEventListener('mouseup', (event) => {
-            event.stopPropagation();
-            if (isGrabbing) {
-                releaseCard();
-                btnGrab.textContent = '掴む';
-                btnGrab.classList.remove('grabbing');
-            }
-        });
-
-        btnGrab.addEventListener('touchend', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            if (isGrabbing) {
+            } else {
                 releaseCard();
                 btnGrab.textContent = '掴む';
                 btnGrab.classList.remove('grabbing');
