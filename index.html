@@ -435,6 +435,46 @@
             source.stop(now + 0.05);
         }
 
+        // カードを掴んだ時の音
+        function playGrabSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 800; // 高めの音
+            oscillator.type = 'sine';
+
+            const now = audioContext.currentTime;
+            gainNode.gain.setValueAtTime(0.15, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+
+            oscillator.start(now);
+            oscillator.stop(now + 0.08);
+        }
+
+        // カードを離した時の音
+        function playReleaseSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 400; // 低めの音
+            oscillator.type = 'sine';
+
+            const now = audioContext.currentTime;
+            gainNode.gain.setValueAtTime(0.15, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+            oscillator.start(now);
+            oscillator.stop(now + 0.1);
+        }
+
         // 配列をシャッフルする関数
         function shuffleArray(array) {
             const shuffled = [...array];
@@ -527,6 +567,7 @@
                 currentIndex = frameOrder.length - 1;
             }
             updateDisplay();
+            playGrabSound();
             console.log('カードを掴みました:', grabbedCard);
 
             // 0.1秒後にクールタイム解除
@@ -544,6 +585,7 @@
             isGrabbing = false;
             grabbedCard = null;
             updateDisplay();
+            playReleaseSound();
             console.log('カードを離しました。現在の順番:', frameOrder);
         }
 
