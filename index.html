@@ -719,6 +719,11 @@
                             playCorrectSound();
                             clearMessage.style.display = 'block';
                             isCleared = true;
+                            // ボタンを非表示にする
+                            btnPrev.style.display = 'none';
+                            btnNext.style.display = 'none';
+                            btnGrab.style.display = 'none';
+                            btnCheck.style.display = 'none';
                             console.log('クリア！正しく循環しています！');
                         } else {
                             playIncorrectSound();
