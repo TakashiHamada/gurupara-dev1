@@ -338,20 +338,14 @@
 
         // カードを離す
         function releaseCard() {
-            if (isAnimating || !isGrabbing || isOnCooldown) return;
+            if (isAnimating || !isGrabbing) return;
 
-            isOnCooldown = true;
             // 現在の位置に掴んでいたカードを挿入
             frameOrder.splice(currentIndex, 0, grabbedCard);
             isGrabbing = false;
             grabbedCard = null;
             updateDisplay();
             console.log('カードを離しました。現在の順番:', frameOrder);
-
-            // 0.1秒後にクールタイム解除
-            setTimeout(() => {
-                isOnCooldown = false;
-            }, 100);
         }
 
         // 掴んでいる状態で左へ移動
