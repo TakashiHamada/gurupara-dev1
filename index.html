@@ -397,6 +397,40 @@
             oscillator.stop(now + 0.3);
         }
 
+        // 紙をめくる音
+        function playPageFlipSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const bufferSize = audioContext.sampleRate * 0.05; // 50ms
+            const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            // ホワイトノイズを生成
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const source = audioContext.createBufferSource();
+            const gainNode = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+
+            // ハイパスフィルターで高音を強調
+            filter.type = 'highpass';
+            filter.frequency.value = 2000;
+
+            source.buffer = buffer;
+            source.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            // 音量を小さめに設定
+            const now = audioContext.currentTime;
+            gainNode.gain.setValueAtTime(0.08, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+
+            source.start(now);
+            source.stop(now + 0.05);
+        }
+
         // 配列をシャッフルする関数
         function shuffleArray(array) {
             const shuffled = [...array];
@@ -464,6 +498,7 @@
             if (isAnimating) return;
             currentIndex = (currentIndex + 1) % frameOrder.length;
             updateDisplay();
+            playPageFlipSound();
         }
 
         // 前のコマへ
@@ -471,6 +506,7 @@
             if (isAnimating) return;
             currentIndex = (currentIndex - 1 + frameOrder.length) % frameOrder.length;
             updateDisplay();
+            playPageFlipSound();
         }
 
         // カードを掴む
@@ -516,6 +552,7 @@
                 currentIndex = frameOrder.length; // 最後へ
             }
             updateDisplay();
+            playPageFlipSound();
         }
 
         // 掴んでいる状態で右へ移動
@@ -527,6 +564,7 @@
                 currentIndex = 0; // 最初へ
             }
             updateDisplay();
+            playPageFlipSound();
         }
 
         // 答え合わせ
