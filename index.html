@@ -642,20 +642,20 @@
         function updateDisplay() {
             if (isGrabbing) {
                 // 掴んでいる時：上に掴んだカード、下に次のカード
-                rocketImg.src = `rocket_${grabbedCard}.png`;
+                rocketImg.src = `images/rocket_${grabbedCard}.png`;
                 rocketImg.classList.add('grabbed');
 
                 // 下のカードを表示（循環）
                 if (frameOrder.length > 0) {
                     const bottomIndex = currentIndex % frameOrder.length;
                     const bottomFrameNumber = frameOrder[bottomIndex];
-                    bottomCard.src = `rocket_${bottomFrameNumber}.png`;
+                    bottomCard.src = `images/rocket_${bottomFrameNumber}.png`;
                     bottomCard.classList.add('visible');
                 }
             } else {
                 // 通常時：1つだけ表示
                 const frameNumber = frameOrder[currentIndex];
-                rocketImg.src = `rocket_${frameNumber}.png`;
+                rocketImg.src = `images/rocket_${frameNumber}.png`;
                 rocketImg.classList.remove('grabbed');
                 bottomCard.classList.remove('visible');
             }
