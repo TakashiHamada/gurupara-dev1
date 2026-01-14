@@ -8,6 +8,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>パラパラ漫画パズル - GitHub Pages</title>
     <style>
+        /* ========================================
+           基本スタイル
+           ======================================== */
         * {
             margin: 0;
             padding: 0;
@@ -16,9 +19,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            /* 明るいグラデーション: 左上イエロー → 右下ターコイズブルー */
             background: linear-gradient(135deg, #FFEB3B 0%, #40E0D0 100%);
-            /* 紙のようなノイズテクスチャをSVGで生成 */
             background-image:
                 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/></filter><rect width="300" height="300" filter="url(%23noise)" opacity="0.05"/></svg>'),
                 linear-gradient(135deg, #FFEB3B 0%, #40E0D0 100%);
@@ -32,6 +33,9 @@
             color: #333;
         }
 
+        /* ========================================
+           ゲームコンテナ
+           ======================================== */
         #game-container {
             position: relative;
             width: 100%;
@@ -42,113 +46,51 @@
             align-items: center;
         }
 
-        /* ヘルプアイコン */
-        #help-icon {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 50%;
+        /* ========================================
+           画像表示エリア
+           ======================================== */
+        #rocket-container {
+            width: 400px;
+            height: 400px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 28px;
-            cursor: pointer;
-            z-index: 100;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
         }
 
-        #help-icon:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        #rocket-img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+            transition: transform 0.1s ease, filter 0.1s ease;
         }
 
-        /* 操作説明パネル（モーダル） */
-        #info-panel {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            bottom: 20px;
-            background: rgba(255, 255, 255, 0.98);
-            color: #333;
-            padding: 40px 30px;
-            border-radius: 15px;
-            text-align: center;
-            z-index: 300;
-            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
-            display: none;
-            overflow-y: auto;
+        #rocket-img.grabbed {
+            transform: translateY(-250px);
+            filter: drop-shadow(0 0 30px rgba(255, 20, 147, 0.8));
         }
 
-        #info-panel.show {
-            display: block;
-        }
-
-        #info-panel h1 {
-            margin-bottom: 20px;
-            font-size: 2em;
-        }
-
-        /* 閉じるボタン */
-        #close-help {
+        #bottom-card {
             position: absolute;
-            top: 15px;
-            right: 15px;
-            width: 40px;
-            height: 40px;
-            background: rgba(0, 0, 0, 0.1);
-            color: #333;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            cursor: pointer;
-            transition: background 0.2s ease;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+            opacity: 0;
+            transition: opacity 0.1s ease;
         }
 
-        #close-help:hover {
-            background: rgba(0, 0, 0, 0.15);
+        #bottom-card.visible {
+            opacity: 1;
         }
 
-        /* オーバーレイ */
-        #help-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            z-index: 250;
-            display: none;
-        }
-
-        #help-overlay.show {
-            display: block;
-        }
-
-        h1 {
-            font-size: 2em;
-            margin-bottom: 10px;
-            color: #FF6B35;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .instructions {
-            font-size: 1.2em;
-            margin-top: 10px;
-            line-height: 1.8;
-        }
-
-        .instructions div {
-            margin: 10px 0;
-        }
-
-        /* 操作ボタン */
+        /* ========================================
+           操作ボタン
+           ======================================== */
         .control-button {
             position: fixed;
             width: 70px;
@@ -171,26 +113,18 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
-        #btn-prev {
-            bottom: 30px;
-            left: 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-weight: bold;
-        }
-
-        #btn-prev:active {
-            background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
-        }
-
+        #btn-prev,
         #btn-next {
             bottom: 30px;
-            right: 30px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             font-weight: bold;
         }
 
+        #btn-prev { left: 30px; }
+        #btn-next { right: 30px; }
+
+        #btn-prev:active,
         #btn-next:active {
             background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
         }
@@ -236,48 +170,109 @@
             box-shadow: 0 2px 10px rgba(46, 204, 113, 0.3);
         }
 
-        /* ロケット表示エリア */
-        #rocket-container {
-            width: 400px;
-            height: 400px;
+        /* ========================================
+           ヘルプ関連
+           ======================================== */
+        #help-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
-            position: relative;
+            font-size: 28px;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        #rocket-img {
-            max-width: 90%;
-            max-height: 90%;
-            object-fit: contain;
-            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
-            transition: transform 0.1s ease, filter 0.1s ease;
+        #help-icon:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
         }
 
-        #rocket-img.grabbed {
-            transform: translateY(-250px);
-            filter: drop-shadow(0 0 30px rgba(255, 20, 147, 0.8));
+        #help-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 250;
+            display: none;
         }
 
-        /* 下のカード（掴んでいる時に表示） */
-        #bottom-card {
+        #help-overlay.show {
+            display: block;
+        }
+
+        #info-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            bottom: 20px;
+            background: rgba(255, 255, 255, 0.98);
+            color: #333;
+            padding: 40px 30px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 300;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+            display: none;
+            overflow-y: auto;
+        }
+
+        #info-panel.show {
+            display: block;
+        }
+
+        #info-panel h1 {
+            margin-bottom: 20px;
+            font-size: 2em;
+            color: #FF6B35;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #close-help {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            max-width: 90%;
-            max-height: 90%;
-            object-fit: contain;
-            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
-            opacity: 0;
-            transition: opacity 0.1s ease;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.1);
+            color: #333;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+            transition: background 0.2s ease;
         }
 
-        #bottom-card.visible {
-            opacity: 1;
+        #close-help:hover {
+            background: rgba(0, 0, 0, 0.15);
         }
 
-        /* クリアメッセージ */
+        .instructions {
+            font-size: 1.2em;
+            margin-top: 10px;
+            line-height: 1.8;
+        }
+
+        .instructions div {
+            margin: 10px 0;
+        }
+
+        /* ========================================
+           クリアメッセージ
+           ======================================== */
         #clear-message {
             position: absolute;
             top: 50%;
@@ -338,7 +333,9 @@
             }
         }
 
-        /* 横向き警告メッセージ */
+        /* ========================================
+           横向き警告
+           ======================================== */
         #landscape-warning {
             display: none;
             position: fixed;
@@ -368,15 +365,13 @@
         }
 
         @keyframes rotate {
-            0%, 100% {
-                transform: rotate(0deg);
-            }
-            50% {
-                transform: rotate(90deg);
-            }
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
         }
 
-        /* スマホ用スタイル */
+        /* ========================================
+           レスポンシブ（スマホ）
+           ======================================== */
         @media (max-width: 768px) {
             #rocket-container {
                 width: 100vw;
@@ -389,14 +384,14 @@
                 height: auto;
             }
 
+            #rocket-img.grabbed {
+                transform: translateY(-30vh);
+            }
+
             #bottom-card {
                 max-width: 100%;
                 width: 100%;
                 height: auto;
-            }
-
-            #rocket-img.grabbed {
-                transform: translateY(-30vh);
             }
 
             #clear-message {
@@ -412,7 +407,6 @@
             }
         }
 
-        /* 横向き時に警告を表示 */
         @media (orientation: landscape) and (max-height: 500px) {
             #landscape-warning {
                 display: flex !important;
@@ -431,10 +425,10 @@
         <!-- ヘルプアイコン -->
         <div id="help-icon">❓</div>
 
-        <!-- オーバーレイ -->
+        <!-- ヘルプオーバーレイ -->
         <div id="help-overlay"></div>
 
-        <!-- 操作説明パネル（モーダル） -->
+        <!-- ヘルプパネル -->
         <div id="info-panel">
             <div id="close-help">✕</div>
             <h1>🚀 操作説明</h1>
@@ -450,11 +444,13 @@
             </div>
         </div>
 
+        <!-- 画像表示エリア -->
         <div id="rocket-container">
             <img id="bottom-card" src="" alt="Bottom Card">
             <img id="rocket-img" src="" alt="Rocket">
         </div>
 
+        <!-- クリアメッセージ -->
         <div id="clear-message">
             <div>🎉 クリア！ 🎉</div>
             <div class="clear-time" id="clear-time"></div>
@@ -469,10 +465,13 @@
     </div>
 
     <script>
+        // ========================================
+        // DOM要素の取得
+        // ========================================
         const rocketImg = document.getElementById('rocket-img');
         const bottomCard = document.getElementById('bottom-card');
         const clearMessage = document.getElementById('clear-message');
-        const gameContainer = document.getElementById('game-container');
+        const clearTime = document.getElementById('clear-time');
         const helpIcon = document.getElementById('help-icon');
         const infoPanel = document.getElementById('info-panel');
         const helpOverlay = document.getElementById('help-overlay');
@@ -482,34 +481,26 @@
         const btnGrab = document.getElementById('btn-grab');
         const btnCheck = document.getElementById('btn-check');
         const resetButton = document.getElementById('reset-button');
-        const clearTime = document.getElementById('clear-time');
 
-        // 正解の順番
+        // ========================================
+        // ゲーム状態管理
+        // ========================================
         const correctOrder = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-        // シャッフルされた順番
         let frameOrder = [];
-        // 現在表示しているインデックス
         let currentIndex = 0;
-        // アニメーション中かどうか
         let isAnimating = false;
-        // カードを掴んでいるかどうか
         let isGrabbing = false;
-        // 掴んでいるカードの値
         let grabbedCard = null;
-        // クリア済みかどうか
         let isCleared = false;
-        // スペースキーのクールタイム管理
         let isOnCooldown = false;
-        // ゲーム開始時刻
         let startTime = null;
 
-        // グローバルAudioContext（1つだけ作成して再利用）
+        // ========================================
+        // Web Audio API
+        // ========================================
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-        // 効果音を生成する関数
         function playCorrectSound() {
-
-            // ピンポーン（E5 → C6）
             const playTone = (frequency, startTime, duration) => {
                 const oscillator = audioContext.createOscillator();
                 const gainNode = audioContext.createGain();
@@ -533,14 +524,13 @@
         }
 
         function playIncorrectSound() {
-            // ブー音
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
 
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
 
-            oscillator.frequency.value = 100; // 低い音
+            oscillator.frequency.value = 100;
             oscillator.type = 'sawtooth';
 
             const now = audioContext.currentTime;
@@ -551,13 +541,11 @@
             oscillator.stop(now + 0.3);
         }
 
-        // 紙をめくる音
         function playPageFlipSound() {
-            const bufferSize = audioContext.sampleRate * 0.05; // 50ms
+            const bufferSize = audioContext.sampleRate * 0.05;
             const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
             const data = buffer.getChannelData(0);
 
-            // ホワイトノイズを生成
             for (let i = 0; i < bufferSize; i++) {
                 data[i] = Math.random() * 2 - 1;
             }
@@ -566,7 +554,6 @@
             const gainNode = audioContext.createGain();
             const filter = audioContext.createBiquadFilter();
 
-            // ハイパスフィルターで高音を強調
             filter.type = 'highpass';
             filter.frequency.value = 2000;
 
@@ -575,7 +562,6 @@
             filter.connect(gainNode);
             gainNode.connect(audioContext.destination);
 
-            // 音量を小さめに設定
             const now = audioContext.currentTime;
             gainNode.gain.setValueAtTime(0.08, now);
             gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
@@ -584,22 +570,18 @@
             source.stop(now + 0.05);
         }
 
-        // 高速ページめくり音（答え合わせ用）
         function playFastPageFlipSound() {
-            const duration = 1.8; // 1.8秒
-            const burstDuration = 0.03; // 各バーストの長さ
-            const burstInterval = 0.1; // バースト間隔
+            const duration = 1.8;
+            const burstDuration = 0.03;
+            const burstInterval = 0.1;
             const numBursts = Math.floor(duration / burstInterval);
 
             for (let i = 0; i < numBursts; i++) {
                 const startTime = audioContext.currentTime + (i * burstInterval);
-
-                // ノイズバッファを作成
                 const bufferSize = audioContext.sampleRate * burstDuration;
                 const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
                 const data = buffer.getChannelData(0);
 
-                // ホワイトノイズを生成
                 for (let j = 0; j < bufferSize; j++) {
                     data[j] = Math.random() * 2 - 1;
                 }
@@ -608,7 +590,6 @@
                 const gainNode = audioContext.createGain();
                 const filter = audioContext.createBiquadFilter();
 
-                // ハイパスフィルター
                 filter.type = 'highpass';
                 filter.frequency.value = 2500;
 
@@ -617,7 +598,6 @@
                 filter.connect(gainNode);
                 gainNode.connect(audioContext.destination);
 
-                // 徐々に音量を下げる
                 const volume = 0.12 * (1 - (i / numBursts) * 0.3);
                 gainNode.gain.setValueAtTime(volume, startTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + burstDuration);
@@ -627,7 +607,6 @@
             }
         }
 
-        // カードを掴んだ時の音
         function playGrabSound() {
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
@@ -635,7 +614,7 @@
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
 
-            oscillator.frequency.value = 800; // 高めの音
+            oscillator.frequency.value = 800;
             oscillator.type = 'sine';
 
             const now = audioContext.currentTime;
@@ -646,7 +625,6 @@
             oscillator.stop(now + 0.08);
         }
 
-        // カードを離した時の音
         function playReleaseSound() {
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
@@ -654,7 +632,7 @@
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
 
-            oscillator.frequency.value = 400; // 低めの音
+            oscillator.frequency.value = 400;
             oscillator.type = 'sine';
 
             const now = audioContext.currentTime;
@@ -665,7 +643,9 @@
             oscillator.stop(now + 0.1);
         }
 
-        // 配列をシャッフルする関数
+        // ========================================
+        // ゲームロジック
+        // ========================================
         function shuffleArray(array) {
             const shuffled = [...array];
             for (let i = shuffled.length - 1; i > 0; i--) {
@@ -675,11 +655,9 @@
             return shuffled;
         }
 
-        // 配列が循環しているかチェック（ループアニメ対応）
         function isLoopingCorrectly(arr) {
             if (arr.length !== correctOrder.length) return false;
 
-            // 各要素が次の要素に正しく続いているかチェック
             for (let i = 0; i < arr.length; i++) {
                 const current = arr[i];
                 const next = arr[(i + 1) % arr.length];
@@ -692,27 +670,21 @@
             return true;
         }
 
-        // ゲーム初期化
         function initGame() {
-            // 循環していない順番になるまでシャッフル
             do {
                 frameOrder = shuffleArray(correctOrder);
             } while (isLoopingCorrectly(frameOrder));
 
             currentIndex = 0;
-            startTime = Date.now(); // ゲーム開始時刻を記録
+            startTime = Date.now();
             updateDisplay();
-            console.log('シャッフルされた順番:', frameOrder);
         }
 
-        // 表示を更新
         function updateDisplay() {
             if (isGrabbing) {
-                // 掴んでいる時：上に掴んだカード、下に次のカード
                 rocketImg.src = `images/rocket_${grabbedCard}.png`;
                 rocketImg.classList.add('grabbed');
 
-                // 下のカードを表示（循環）
                 if (frameOrder.length > 0) {
                     const bottomIndex = currentIndex % frameOrder.length;
                     const bottomFrameNumber = frameOrder[bottomIndex];
@@ -720,7 +692,6 @@
                     bottomCard.classList.add('visible');
                 }
             } else {
-                // 通常時：1つだけ表示
                 const frameNumber = frameOrder[currentIndex];
                 rocketImg.src = `images/rocket_${frameNumber}.png`;
                 rocketImg.classList.remove('grabbed');
@@ -728,7 +699,6 @@
             }
         }
 
-        // 次のコマへ
         function nextFrame() {
             if (isAnimating) return;
             currentIndex = (currentIndex + 1) % frameOrder.length;
@@ -736,7 +706,6 @@
             playPageFlipSound();
         }
 
-        // 前のコマへ
         function prevFrame() {
             if (isAnimating) return;
             currentIndex = (currentIndex - 1 + frameOrder.length) % frameOrder.length;
@@ -744,67 +713,62 @@
             playPageFlipSound();
         }
 
-        // カードを掴む
         function grabCard() {
             if (isAnimating || isGrabbing || isOnCooldown) return;
 
             isGrabbing = true;
             isOnCooldown = true;
             grabbedCard = frameOrder[currentIndex];
-            // 配列から掴んだカードを削除
             frameOrder.splice(currentIndex, 1);
-            // インデックスを調整
+
             if (currentIndex >= frameOrder.length) {
                 currentIndex = frameOrder.length - 1;
             }
+
             updateDisplay();
             playGrabSound();
-            console.log('カードを掴みました:', grabbedCard);
 
-            // 0.1秒後にクールタイム解除
             setTimeout(() => {
                 isOnCooldown = false;
             }, 100);
         }
 
-        // カードを離す
         function releaseCard() {
             if (isAnimating || !isGrabbing) return;
 
-            // 現在の位置に掴んでいたカードを挿入
             frameOrder.splice(currentIndex, 0, grabbedCard);
             isGrabbing = false;
             grabbedCard = null;
             updateDisplay();
             playReleaseSound();
-            console.log('カードを離しました。現在の順番:', frameOrder);
         }
 
-        // 掴んでいる状態で左へ移動
         function moveGrabbedLeft() {
             if (!isGrabbing) return;
+
             if (currentIndex > 0) {
                 currentIndex--;
             } else {
-                currentIndex = frameOrder.length; // 最後へ
+                currentIndex = frameOrder.length;
             }
+
             updateDisplay();
             playPageFlipSound();
         }
 
-        // 掴んでいる状態で右へ移動
         function moveGrabbedRight() {
             if (!isGrabbing) return;
+
             if (currentIndex < frameOrder.length) {
                 currentIndex++;
             } else {
-                currentIndex = 0; // 最初へ
+                currentIndex = 0;
             }
+
             updateDisplay();
             playPageFlipSound();
         }
 
-        // 答え合わせ
         function checkAnswer() {
             if (isAnimating) return;
 
@@ -812,30 +776,24 @@
             const startIndex = currentIndex;
             let frameCount = 0;
 
-            // 高速ページめくり音を再生
             playFastPageFlipSound();
 
-            // アニメーション再生（選択中のコマから2周）
             const interval = setInterval(() => {
                 updateDisplay();
                 frameCount++;
                 currentIndex = (startIndex + frameCount) % frameOrder.length;
 
-                // 2周終了
                 if (frameCount >= frameOrder.length * 2) {
                     clearInterval(interval);
-                    currentIndex = startIndex; // 開始位置に戻る
+                    currentIndex = startIndex;
                     updateDisplay();
 
-                    // 0.5秒待ってから判定
                     setTimeout(() => {
                         isAnimating = false;
 
-                        // 循環判定
                         if (isLoopingCorrectly(frameOrder)) {
                             playCorrectSound();
 
-                            // 経過時間を計算
                             const elapsedTime = Date.now() - startTime;
                             const seconds = Math.floor(elapsedTime / 1000);
                             const minutes = Math.floor(seconds / 60);
@@ -847,23 +805,36 @@
 
                             clearMessage.style.display = 'block';
                             isCleared = true;
-                            // ボタンを非表示にする
+
                             btnPrev.style.display = 'none';
                             btnNext.style.display = 'none';
                             btnGrab.style.display = 'none';
                             btnCheck.style.display = 'none';
                             helpIcon.style.display = 'none';
-                            console.log('クリア！正しく循環しています！');
                         } else {
                             playIncorrectSound();
-                            console.log('不正解。循環していません。現在:', frameOrder);
                         }
                     }, 500);
                 }
-            }, 100); // 0.1秒ごと
+            }, 100);
         }
 
-        // キーボード操作
+        // ========================================
+        // ヘルプパネル
+        // ========================================
+        function showHelp() {
+            infoPanel.classList.add('show');
+            helpOverlay.classList.add('show');
+        }
+
+        function hideHelp() {
+            infoPanel.classList.remove('show');
+            helpOverlay.classList.remove('show');
+        }
+
+        // ========================================
+        // イベントリスナー
+        // ========================================
         document.addEventListener('keydown', (event) => {
             if (event.code === 'ArrowRight') {
                 event.preventDefault();
@@ -881,16 +852,13 @@
                 }
             } else if (event.code === 'Space') {
                 event.preventDefault();
-                // キーリピートを無視
                 if (event.repeat) return;
-                // 押している間だけ掴む（連続発火を防ぐ）
                 if (!isGrabbing) {
                     grabCard();
                 }
             } else if (event.code === 'Enter') {
                 event.preventDefault();
                 if (isCleared) {
-                    // クリア済みならリロード
                     location.reload();
                 } else if (!isGrabbing) {
                     checkAnswer();
@@ -898,20 +866,15 @@
             }
         });
 
-        // スペースキーを離したら配置
         document.addEventListener('keyup', (event) => {
             if (event.code === 'Space') {
                 event.preventDefault();
-                console.log('keyup: isGrabbing =', isGrabbing);
                 if (isGrabbing) {
                     releaseCard();
-                } else {
-                    console.log('keyup: カードを掴んでいないため、releaseCard()をスキップ');
                 }
             }
         });
 
-        // ボタン操作
         btnPrev.addEventListener('click', (event) => {
             event.stopPropagation();
             if (isGrabbing) {
@@ -930,7 +893,6 @@
             }
         });
 
-        // 掴むボタン（トグル式）
         btnGrab.addEventListener('click', (event) => {
             event.stopPropagation();
             if (!isGrabbing) {
@@ -944,7 +906,6 @@
             }
         });
 
-        // 確認ボタン
         btnCheck.addEventListener('click', (event) => {
             event.stopPropagation();
             if (isCleared) {
@@ -954,32 +915,19 @@
             }
         });
 
-        // リセットボタン
         resetButton.addEventListener('click', (event) => {
             event.stopPropagation();
             location.reload();
         });
 
-        // ヘルプパネルの開閉
-        function showHelp() {
-            infoPanel.classList.add('show');
-            helpOverlay.classList.add('show');
-        }
-
-        function hideHelp() {
-            infoPanel.classList.remove('show');
-            helpOverlay.classList.remove('show');
-        }
-
         helpIcon.addEventListener('click', showHelp);
         closeHelp.addEventListener('click', hideHelp);
         helpOverlay.addEventListener('click', hideHelp);
 
+        // ========================================
         // ゲーム開始
+        // ========================================
         initGame();
-        console.log('🚀 パラパラ漫画パズルが開始されました！');
-        console.log('スペースキーでカードを掴んで、左右キーで位置を変更。');
-        console.log('スペースキーで離して、エンターキーで答え合わせ！');
     </script>
 </body>
 </html>
