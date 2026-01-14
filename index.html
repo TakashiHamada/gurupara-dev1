@@ -33,18 +33,88 @@
             align-items: center;
         }
 
-        #info-panel {
+        /* ヘルプアイコン */
+        #help-icon {
             position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
             background: rgba(0, 0, 0, 0.7);
-            padding: 20px 40px;
-            border-radius: 15px;
-            text-align: center;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            cursor: pointer;
             z-index: 100;
             backdrop-filter: blur(10px);
+            transition: transform 0.2s ease;
+        }
+
+        #help-icon:hover {
+            transform: scale(1.1);
+        }
+
+        /* 操作説明パネル（モーダル） */
+        #info-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 300;
+            backdrop-filter: blur(10px);
             max-width: 90%;
+            display: none;
+        }
+
+        #info-panel.show {
+            display: block;
+        }
+
+        #info-panel h1 {
+            margin-bottom: 20px;
+        }
+
+        /* 閉じるボタン */
+        #close-help {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        #close-help:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* オーバーレイ */
+        #help-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 250;
+            display: none;
+        }
+
+        #help-overlay.show {
+            display: block;
         }
 
         h1 {
@@ -56,7 +126,11 @@
         .instructions {
             font-size: 1em;
             margin-top: 10px;
-            line-height: 1.6;
+            line-height: 1.8;
+        }
+
+        .instructions div {
+            margin: 8px 0;
         }
 
         /* ロケット表示エリア */
@@ -138,12 +212,21 @@
 </head>
 <body>
     <div id="game-container">
+        <!-- ヘルプアイコン -->
+        <div id="help-icon">❓</div>
+
+        <!-- オーバーレイ -->
+        <div id="help-overlay"></div>
+
+        <!-- 操作説明パネル（モーダル） -->
         <div id="info-panel">
+            <div id="close-help">✕</div>
             <h1>🚀 パラパラ漫画パズル</h1>
             <div class="instructions">
-                <div>← / 右クリック：前のコマ　→ / 左クリック：次のコマ</div>
-                <div>スペースキー長押し：カードを掴む（離すと配置）</div>
-                <div>掴んだ状態で← →：カードの位置を入れ替え</div>
+                <div>← / 右クリック：前のコマ</div>
+                <div>→ / 左クリック：次のコマ</div>
+                <div>スペースキー長押し：カードを掴む</div>
+                <div>掴んだ状態で← →：位置を変更</div>
                 <div>エンターキー：答え合わせ</div>
             </div>
         </div>
@@ -164,6 +247,10 @@
         const bottomCard = document.getElementById('bottom-card');
         const clearMessage = document.getElementById('clear-message');
         const gameContainer = document.getElementById('game-container');
+        const helpIcon = document.getElementById('help-icon');
+        const infoPanel = document.getElementById('info-panel');
+        const helpOverlay = document.getElementById('help-overlay');
+        const closeHelp = document.getElementById('close-help');
 
         // 正解の順番
         const correctOrder = [0, 1, 2, 3, 4, 5, 6, 7, 8];
@@ -470,6 +557,21 @@
                 prevFrame();
             }
         });
+
+        // ヘルプパネルの開閉
+        function showHelp() {
+            infoPanel.classList.add('show');
+            helpOverlay.classList.add('show');
+        }
+
+        function hideHelp() {
+            infoPanel.classList.remove('show');
+            helpOverlay.classList.remove('show');
+        }
+
+        helpIcon.addEventListener('click', showHelp);
+        closeHelp.addEventListener('click', hideHelp);
+        helpOverlay.addEventListener('click', hideHelp);
 
         // ゲーム開始
         initGame();
