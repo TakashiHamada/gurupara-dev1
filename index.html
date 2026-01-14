@@ -78,7 +78,7 @@
             max-height: 90%;
             object-fit: contain;
             filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
-            transition: transform 0.2s ease, filter 0.2s ease;
+            transition: transform 0.1s ease, filter 0.1s ease;
         }
 
         #rocket-img.grabbed {
@@ -94,7 +94,7 @@
             object-fit: contain;
             filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
             opacity: 0;
-            transition: opacity 0.2s ease;
+            transition: opacity 0.1s ease;
         }
 
         #bottom-card.visible {
@@ -330,10 +330,10 @@
             updateDisplay();
             console.log('カードを掴みました:', grabbedCard);
 
-            // 0.2秒後にクールタイム解除
+            // 0.1秒後にクールタイム解除
             setTimeout(() => {
                 isOnCooldown = false;
-            }, 200);
+            }, 100);
         }
 
         // カードを離す
@@ -348,10 +348,10 @@
             updateDisplay();
             console.log('カードを離しました。現在の順番:', frameOrder);
 
-            // 0.2秒後にクールタイム解除
+            // 0.1秒後にクールタイム解除
             setTimeout(() => {
                 isOnCooldown = false;
-            }, 200);
+            }, 100);
         }
 
         // 掴んでいる状態で左へ移動
