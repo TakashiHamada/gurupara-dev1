@@ -128,6 +128,13 @@
             display: none;
             z-index: 200;
             animation: pulse 1s ease-in-out infinite;
+            text-align: center;
+        }
+
+        #clear-message .reset-hint {
+            font-size: 0.4em;
+            margin-top: 20px;
+            opacity: 0.9;
         }
 
         @keyframes pulse {
@@ -162,7 +169,8 @@
         </div>
 
         <div id="clear-message">
-            🎉 クリア！ 🎉
+            <div>🎉 クリア！ 🎉</div>
+            <div class="reset-hint">エンターキーでリセット</div>
         </div>
     </div>
 
@@ -374,7 +382,7 @@
                         currentIndex = 0;
                         updateDisplay();
 
-                        // 1秒待ってから判定
+                        // 0.5秒待ってから判定
                         setTimeout(() => {
                             isAnimating = false;
 
@@ -388,7 +396,7 @@
                                 playIncorrectSound();
                                 console.log('不正解。正解:', correctOrder, '現在:', frameOrder);
                             }
-                        }, 1000);
+                        }, 500);
                     }
                 }
             }, 100); // 0.1秒ごと
