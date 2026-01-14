@@ -135,6 +135,63 @@
             margin: 10px 0;
         }
 
+        /* 操作ボタン */
+        .control-button {
+            position: fixed;
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            cursor: pointer;
+            z-index: 50;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            user-select: none;
+            transition: transform 0.1s ease, background 0.1s ease;
+        }
+
+        .control-button:active {
+            transform: scale(0.95);
+            background: rgba(200, 200, 200, 0.9);
+        }
+
+        #btn-prev {
+            bottom: 30px;
+            left: 30px;
+        }
+
+        #btn-next {
+            bottom: 30px;
+            right: 30px;
+        }
+
+        #btn-grab {
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90px;
+            height: 90px;
+            font-size: 20px;
+            background: rgba(255, 215, 0, 0.9);
+        }
+
+        #btn-grab:active {
+            transform: translateX(-50%) scale(0.95);
+        }
+
+        #btn-grab.grabbing {
+            background: rgba(255, 100, 100, 0.9);
+        }
+
+        #btn-check {
+            top: 30px;
+            left: 30px;
+            background: rgba(100, 255, 100, 0.9);
+        }
+
         /* ロケット表示エリア */
         #rocket-container {
             width: 400px;
@@ -225,10 +282,10 @@
             <div id="close-help">✕</div>
             <h1>🚀 操作説明</h1>
             <div class="instructions">
-                <div>← →：コマ移動</div>
-                <div>スペース長押し：掴む</div>
+                <div>← →ボタン：コマ移動</div>
+                <div>掴むボタン長押し：カードを掴む</div>
                 <div>掴んだ状態で← →：位置変更</div>
-                <div>エンター：答え合わせ</div>
+                <div>✓ボタン：答え合わせ</div>
             </div>
         </div>
 
@@ -241,6 +298,12 @@
             <div>🎉 クリア！ 🎉</div>
             <div class="reset-hint">エンターキーでリセット</div>
         </div>
+
+        <!-- 操作ボタン -->
+        <div id="btn-prev" class="control-button">←</div>
+        <div id="btn-next" class="control-button">→</div>
+        <div id="btn-grab" class="control-button">掴む</div>
+        <div id="btn-check" class="control-button">✓</div>
     </div>
 
     <script>
@@ -252,6 +315,10 @@
         const infoPanel = document.getElementById('info-panel');
         const helpOverlay = document.getElementById('help-overlay');
         const closeHelp = document.getElementById('close-help');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const btnGrab = document.getElementById('btn-grab');
+        const btnCheck = document.getElementById('btn-check');
 
         // 正解の順番
         const correctOrder = [0, 1, 2, 3, 4, 5, 6, 7, 8];
@@ -537,11 +604,18 @@
             }
         });
 
-        // 左クリック操作（次へ進む）
-        gameContainer.addEventListener('click', (event) => {
-            // クリアメッセージが表示されている場合は無視
-            if (clearMessage.style.display === 'block') return;
+        // ボタン操作
+        btnPrev.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (isGrabbing) {
+                moveGrabbedLeft();
+            } else {
+                prevFrame();
+            }
+        });
 
+        btnNext.addEventListener('click', (event) => {
+            event.stopPropagation();
             if (isGrabbing) {
                 moveGrabbedRight();
             } else {
@@ -549,13 +623,52 @@
             }
         });
 
-        // 右クリック操作（前へ戻る）
-        gameContainer.addEventListener('contextmenu', (event) => {
+        // 掴むボタン（タッチダウン/タッチアップ対応）
+        btnGrab.addEventListener('mousedown', (event) => {
+            event.stopPropagation();
+            if (!isGrabbing) {
+                grabCard();
+                btnGrab.textContent = '離す';
+                btnGrab.classList.add('grabbing');
+            }
+        });
+
+        btnGrab.addEventListener('touchstart', (event) => {
             event.preventDefault();
+            event.stopPropagation();
+            if (!isGrabbing) {
+                grabCard();
+                btnGrab.textContent = '離す';
+                btnGrab.classList.add('grabbing');
+            }
+        });
+
+        btnGrab.addEventListener('mouseup', (event) => {
+            event.stopPropagation();
             if (isGrabbing) {
-                moveGrabbedLeft();
-            } else {
-                prevFrame();
+                releaseCard();
+                btnGrab.textContent = '掴む';
+                btnGrab.classList.remove('grabbing');
+            }
+        });
+
+        btnGrab.addEventListener('touchend', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (isGrabbing) {
+                releaseCard();
+                btnGrab.textContent = '掴む';
+                btnGrab.classList.remove('grabbing');
+            }
+        });
+
+        // 確認ボタン
+        btnCheck.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (isCleared) {
+                location.reload();
+            } else if (!isGrabbing) {
+                checkAnswer();
             }
         });
 
