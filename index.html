@@ -432,6 +432,8 @@
                 }
             } else if (event.code === 'Space') {
                 event.preventDefault();
+                // キーリピートを無視
+                if (event.repeat) return;
                 // 押している間だけ掴む（連続発火を防ぐ）
                 if (!isGrabbing) {
                     grabCard();
@@ -451,8 +453,11 @@
         document.addEventListener('keyup', (event) => {
             if (event.code === 'Space') {
                 event.preventDefault();
+                console.log('keyup: isGrabbing =', isGrabbing);
                 if (isGrabbing) {
                     releaseCard();
+                } else {
+                    console.log('keyup: カードを掴んでいないため、releaseCard()をスキップ');
                 }
             }
         });
