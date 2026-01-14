@@ -435,6 +435,50 @@
             source.stop(now + 0.05);
         }
 
+        // 高速ページめくり音（答え合わせ用）
+        function playFastPageFlipSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const duration = 1.8; // 1.8秒
+            const burstDuration = 0.03; // 各バーストの長さ
+            const burstInterval = 0.1; // バースト間隔
+            const numBursts = Math.floor(duration / burstInterval);
+
+            for (let i = 0; i < numBursts; i++) {
+                const startTime = audioContext.currentTime + (i * burstInterval);
+
+                // ノイズバッファを作成
+                const bufferSize = audioContext.sampleRate * burstDuration;
+                const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+
+                // ホワイトノイズを生成
+                for (let j = 0; j < bufferSize; j++) {
+                    data[j] = Math.random() * 2 - 1;
+                }
+
+                const source = audioContext.createBufferSource();
+                const gainNode = audioContext.createGain();
+                const filter = audioContext.createBiquadFilter();
+
+                // ハイパスフィルター
+                filter.type = 'highpass';
+                filter.frequency.value = 2500;
+
+                source.buffer = buffer;
+                source.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                // 徐々に音量を下げる
+                const volume = 0.12 * (1 - (i / numBursts) * 0.3);
+                gainNode.gain.setValueAtTime(volume, startTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + burstDuration);
+
+                source.start(startTime);
+                source.stop(startTime + burstDuration);
+            }
+        }
+
         // カードを掴んだ時の音
         function playGrabSound() {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -620,6 +664,9 @@
             isAnimating = true;
             const startIndex = currentIndex;
             let frameCount = 0;
+
+            // 高速ページめくり音を再生
+            playFastPageFlipSound();
 
             // アニメーション再生（選択中のコマから2周）
             const interval = setInterval(() => {
