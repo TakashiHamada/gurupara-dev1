@@ -383,9 +383,11 @@
         // スペースキーのクールタイム管理
         let isOnCooldown = false;
 
+        // グローバルAudioContext（1つだけ作成して再利用）
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
         // 効果音を生成する関数
         function playCorrectSound() {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
             // ピンポーン（E5 → C6）
             const playTone = (frequency, startTime, duration) => {
@@ -411,8 +413,6 @@
         }
 
         function playIncorrectSound() {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
             // ブー音
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
@@ -433,7 +433,6 @@
 
         // 紙をめくる音
         function playPageFlipSound() {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const bufferSize = audioContext.sampleRate * 0.05; // 50ms
             const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
             const data = buffer.getChannelData(0);
@@ -467,7 +466,6 @@
 
         // 高速ページめくり音（答え合わせ用）
         function playFastPageFlipSound() {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const duration = 1.8; // 1.8秒
             const burstDuration = 0.03; // 各バーストの長さ
             const burstInterval = 0.1; // バースト間隔
@@ -511,7 +509,6 @@
 
         // カードを掴んだ時の音
         function playGrabSound() {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
 
@@ -531,7 +528,6 @@
 
         // カードを離した時の音
         function playReleaseSound() {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
 
