@@ -63,12 +63,12 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.95);
-            padding: 40px;
+            padding: 30px 20px;
             border-radius: 15px;
             text-align: center;
             z-index: 300;
             backdrop-filter: blur(10px);
-            max-width: 90%;
+            max-width: 85%;
             display: none;
         }
 
@@ -77,7 +77,8 @@
         }
 
         #info-panel h1 {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            font-size: 1.6em;
         }
 
         /* 閉じるボタン */
@@ -124,13 +125,13 @@
         }
 
         .instructions {
-            font-size: 1em;
-            margin-top: 10px;
-            line-height: 1.8;
+            font-size: 0.9em;
+            margin-top: 5px;
+            line-height: 1.5;
         }
 
         .instructions div {
-            margin: 8px 0;
+            margin: 5px 0;
         }
 
         /* ロケット表示エリア */
@@ -221,13 +222,12 @@
         <!-- 操作説明パネル（モーダル） -->
         <div id="info-panel">
             <div id="close-help">✕</div>
-            <h1>🚀 パラパラ漫画パズル</h1>
+            <h1>🚀 操作説明</h1>
             <div class="instructions">
-                <div>← / 右クリック：前のコマ</div>
-                <div>→ / 左クリック：次のコマ</div>
-                <div>スペースキー長押し：カードを掴む</div>
-                <div>掴んだ状態で← →：位置を変更</div>
-                <div>エンターキー：答え合わせ</div>
+                <div>← →：コマ移動</div>
+                <div>スペース長押し：掴む</div>
+                <div>掴んだ状態で← →：位置変更</div>
+                <div>エンター：答え合わせ</div>
             </div>
         </div>
 
