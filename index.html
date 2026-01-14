@@ -294,6 +294,14 @@
             box-shadow: 0 10px 40px rgba(255, 107, 53, 0.4);
         }
 
+        #clear-message .clear-time {
+            font-size: 0.5em;
+            margin-top: 15px;
+            opacity: 0.95;
+            color: white;
+            font-weight: normal;
+        }
+
         #clear-message .reset-hint {
             font-size: 0.4em;
             margin-top: 20px;
@@ -442,6 +450,7 @@
 
         <div id="clear-message">
             <div>🎉 クリア！ 🎉</div>
+            <div class="clear-time" id="clear-time"></div>
             <div class="reset-hint" id="reset-button">もう一度プレイ</div>
         </div>
 
@@ -466,6 +475,7 @@
         const btnGrab = document.getElementById('btn-grab');
         const btnCheck = document.getElementById('btn-check');
         const resetButton = document.getElementById('reset-button');
+        const clearTime = document.getElementById('clear-time');
 
         // 正解の順番
         const correctOrder = [0, 1, 2, 3, 4, 5, 6, 7, 8];
@@ -483,6 +493,8 @@
         let isCleared = false;
         // スペースキーのクールタイム管理
         let isOnCooldown = false;
+        // ゲーム開始時刻
+        let startTime = null;
 
         // グローバルAudioContext（1つだけ作成して再利用）
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -681,6 +693,7 @@
             } while (isLoopingCorrectly(frameOrder));
 
             currentIndex = 0;
+            startTime = Date.now(); // ゲーム開始時刻を記録
             updateDisplay();
             console.log('シャッフルされた順番:', frameOrder);
         }
@@ -814,6 +827,17 @@
                         // 循環判定
                         if (isLoopingCorrectly(frameOrder)) {
                             playCorrectSound();
+
+                            // 経過時間を計算
+                            const elapsedTime = Date.now() - startTime;
+                            const seconds = Math.floor(elapsedTime / 1000);
+                            const minutes = Math.floor(seconds / 60);
+                            const remainingSeconds = seconds % 60;
+                            const timeText = minutes > 0
+                                ? `${minutes}分${remainingSeconds}秒`
+                                : `${remainingSeconds}秒`;
+                            clearTime.textContent = `クリアタイム: ${timeText}`;
+
                             clearMessage.style.display = 'block';
                             isCleared = true;
                             // ボタンを非表示にする
