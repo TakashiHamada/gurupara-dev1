@@ -78,6 +78,7 @@
             max-height: 90%;
             object-fit: contain;
             filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+            transition: transform 0.2s ease, filter 0.2s ease;
         }
 
         #rocket-img.grabbed {
@@ -93,6 +94,7 @@
             object-fit: contain;
             filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
             opacity: 0;
+            transition: opacity 0.2s ease;
         }
 
         #bottom-card.visible {
@@ -195,6 +197,8 @@
         let grabbedCard = null;
         // クリア済みかどうか
         let isCleared = false;
+        // スペースキーのクールタイム管理
+        let isOnCooldown = false;
 
         // 効果音を生成する関数
         function playCorrectSound() {
@@ -312,8 +316,10 @@
 
         // カードを掴む
         function grabCard() {
-            if (isAnimating || isGrabbing) return;
+            if (isAnimating || isGrabbing || isOnCooldown) return;
+
             isGrabbing = true;
+            isOnCooldown = true;
             grabbedCard = frameOrder[currentIndex];
             // 配列から掴んだカードを削除
             frameOrder.splice(currentIndex, 1);
@@ -323,17 +329,29 @@
             }
             updateDisplay();
             console.log('カードを掴みました:', grabbedCard);
+
+            // 0.2秒後にクールタイム解除
+            setTimeout(() => {
+                isOnCooldown = false;
+            }, 200);
         }
 
         // カードを離す
         function releaseCard() {
-            if (isAnimating || !isGrabbing) return;
+            if (isAnimating || !isGrabbing || isOnCooldown) return;
+
+            isOnCooldown = true;
             // 現在の位置に掴んでいたカードを挿入
             frameOrder.splice(currentIndex, 0, grabbedCard);
             isGrabbing = false;
             grabbedCard = null;
             updateDisplay();
             console.log('カードを離しました。現在の順番:', frameOrder);
+
+            // 0.2秒後にクールタイム解除
+            setTimeout(() => {
+                isOnCooldown = false;
+            }, 200);
         }
 
         // 掴んでいる状態で左へ移動
