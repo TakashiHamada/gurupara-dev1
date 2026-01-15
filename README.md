@@ -40,9 +40,9 @@ PC（キーボード）とスマホ（タッチ操作）の両方に対応。
 
 1. **開始**: ゲーム読み込み時に自動的にフレームがシャッフルされる
 2. **操作**: カードを掴んで移動し、正しい順序に並べ替える
-3. **答え合わせ**: Enterキーまたは✓ボタンで確認
+3. **答え合わせ**: Enterキーまたは「答え合わせ」ボタンで確認
 4. **結果表示**:
-   - 正解: クリアメッセージ + ピンポーン音
+   - 正解: クリアメッセージ + クリアタイム + ピンポーン音
    - 不正解: ブザー音のみ
 5. **リセット**: 「もう一度プレイ」ボタンでページリロード
 
@@ -53,19 +53,19 @@ PC（キーボード）とスマホ（タッチ操作）の両方に対応。
 | キー | 動作 |
 |------|------|
 | `←` `→` | コマを前後に移動 |
-| `スペース`（長押し） | カードを掴む/離す |
-| 掴んだ状態で `←` `→` | カードの位置を変更 |
+| `スペース`（長押し） | カードをつかむ/はなす |
+| つかんだ状態で `←` `→` | カードの位置を変更 |
 | `Enter` | 答え合わせ |
 
 ### タッチ/マウス操作（スマホ・PC共通）
 
 | ボタン | 位置 | 動作 |
 |--------|------|------|
-| `←` | 左下 | 前のコマへ |
-| `→` | 右下 | 次のコマへ |
-| `掴む` | 中央下（黄色） | カードを掴む/離す（トグル式） |
-| `✓` | 左上（緑色） | 答え合わせ |
-| `❓` | 右上 | ヘルプ表示 |
+| `←` | 左下（紫色） | 前のコマへ |
+| `→` | 右下（紫色） | 次のコマへ |
+| `つかむ` | 中央下（オレンジ色） | カードをつかむ/はなす（トグル式） |
+| `答え合わせ` | 左上（緑色） | 答え合わせ |
+| `❓` | 右上（白色） | ヘルプ表示 |
 
 ## 実装の詳細
 
@@ -95,14 +95,15 @@ PC（キーボード）とスマホ（タッチ操作）の両方に対応。
         <!-- クリアメッセージ -->
         <div id="clear-message">
             <div>🎉 クリア！ 🎉</div>
+            <div class="clear-time" id="clear-time"></div>
             <div class="reset-hint" id="reset-button">もう一度プレイ</div>
         </div>
 
         <!-- 操作ボタン -->
         <div id="btn-prev" class="control-button">←</div>
         <div id="btn-next" class="control-button">→</div>
-        <div id="btn-grab" class="control-button">掴む</div>
-        <div id="btn-check" class="control-button">✓</div>
+        <div id="btn-grab" class="control-button">つかむ</div>
+        <div id="btn-check" class="control-button">答え合わせ</div>
     </div>
 </body>
 ```
@@ -111,9 +112,9 @@ PC（キーボード）とスマホ（タッチ操作）の両方に対応。
 
 #### レイアウト
 
-- **背景**: グラデーション（`#667eea` → `#764ba2`）
+- **背景**: 明るいグラデーション（`#FFEB3B` イエロー → `#40E0D0` ターコイズブルー）+ SVG紙テクスチャ（ノイズ）
 - **中央配置**: flexboxで画面中央にゲームコンテナを配置
-- **ロケットコンテナ**: 400×400pxの半透明白背景、角丸、ブラー効果
+- **ロケットコンテナ**: 400×400px、背景なし（PC）/ 100vw × auto（スマホ）
 
 #### ボタンスタイル
 
@@ -124,24 +125,31 @@ PC（キーボード）とスマホ（タッチ操作）の両方に対応。
     width: 70px;
     height: 70px;
     border-radius: 50%;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    transition: transform 0.1s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: transform 0.1s ease, background 0.1s ease, box-shadow 0.1s ease;
 }
 ```
 
 **個別スタイル**:
-- `#btn-prev`, `#btn-next`: 黒背景（`rgba(0,0,0,0.9)`）、白文字
-- `#btn-grab`: 黄色背景（`rgba(255,215,0,0.9)`）、90×90px
-  - 掴んでいる時: 赤色背景（`rgba(255,100,100,0.9)`）、テキスト「離す」
-- `#btn-check`: 緑色背景（`rgba(100,255,100,0.9)`）
+- `#btn-prev`, `#btn-next`: 紫グラデーション（`#667eea` → `#764ba2`）、白文字
+- `#btn-grab`: オレンジグラデーション（`#FF6B35` → `#FF9F1C`）、90×90px
+  - つかんでいる時: 赤グラデーション（`#E74C3C` → `#C0392B`）、テキスト「はなす」
+- `#btn-check`: 緑グラデーション（`#2ECC71` → `#27AE60`）、自動幅、pill形状（border-radius: 25px）、テキスト「答え合わせ」
 
 #### アニメーション
 
 **カード掴み動作**:
 ```css
 #rocket-img.grabbed {
-    transform: translateY(-250px);
-    filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8));
+    transform: translateY(-250px);  /* PC用 */
+    filter: drop-shadow(0 0 30px rgba(255, 20, 147, 0.8));  /* ピンク色 */
+}
+
+/* スマホ用 */
+@media (max-width: 768px) {
+    #rocket-img.grabbed {
+        transform: translateY(-30vh);  /* viewport相対 */
+    }
 }
 ```
 
@@ -158,6 +166,27 @@ PC（キーボード）とスマホ（タッチ操作）の両方に対応。
 **スマホ用（max-width: 768px）**:
 ```css
 @media (max-width: 768px) {
+    #rocket-container {
+        width: 100vw;
+        height: auto;
+    }
+
+    #rocket-img {
+        max-width: 100%;
+        width: 100%;
+        height: auto;
+    }
+
+    #rocket-img.grabbed {
+        transform: translateY(-30vh);
+    }
+
+    #bottom-card {
+        max-width: 100%;
+        width: 100%;
+        height: auto;
+    }
+
     #clear-message {
         font-size: 2.5em;
         padding: 30px 40px;
@@ -165,6 +194,11 @@ PC（キーボード）とスマホ（タッチ操作）の両方に対応。
     }
 }
 ```
+
+**重要**: スマホでのレイアウトズレを防ぐため、以下の実装が重要です：
+- `#bottom-card` に明示的な中央配置：`top: 50%; left: 50%; transform: translate(-50%, -50%);`
+- スマホでは `translateY` をvh単位にする（画面サイズに対する相対値）
+- `scale()` は使用しない（レイアウトズレの原因になる）
 
 **横向き警告（landscape & max-height: 500px）**:
 ```css
@@ -191,6 +225,7 @@ let isGrabbing = false;        // カードを掴んでいるかどうか
 let grabbedCard = null;        // 掴んでいるカードの値
 let isCleared = false;         // クリア済みかどうか
 let isOnCooldown = false;      // スペースキーのクールタイム管理
+let startTime = null;          // ゲーム開始時刻（クリアタイム計測用）
 
 // グローバルAudioContext（重要：1つだけ作成して再利用）
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -217,6 +252,7 @@ function initGame() {
     } while (isLoopingCorrectly(frameOrder));
 
     currentIndex = 0;
+    startTime = Date.now(); // ゲーム開始時刻を記録
     updateDisplay();
 }
 ```
@@ -348,6 +384,17 @@ function checkAnswer() {
                 // 循環判定
                 if (isLoopingCorrectly(frameOrder)) {
                     playCorrectSound();
+
+                    // クリアタイムを計算して表示
+                    const elapsedTime = Date.now() - startTime;
+                    const seconds = Math.floor(elapsedTime / 1000);
+                    const minutes = Math.floor(seconds / 60);
+                    const remainingSeconds = seconds % 60;
+                    const timeText = minutes > 0
+                        ? `${minutes}分${remainingSeconds}秒`
+                        : `${remainingSeconds}秒`;
+                    clearTime.textContent = `クリアタイム: ${timeText}`;
+
                     clearMessage.style.display = 'block';
                     isCleared = true;
 
@@ -634,16 +681,16 @@ btnNext.addEventListener('click', (event) => {
     }
 });
 
-// 掴むボタン（トグル式）
+// つかむボタン（トグル式）
 btnGrab.addEventListener('click', (event) => {
     event.stopPropagation();
     if (!isGrabbing) {
         grabCard();
-        btnGrab.textContent = '離す';
+        btnGrab.textContent = 'はなす';
         btnGrab.classList.add('grabbing');
     } else {
         releaseCard();
-        btnGrab.textContent = '掴む';
+        btnGrab.textContent = 'つかむ';
         btnGrab.classList.remove('grabbing');
     }
 });
@@ -743,25 +790,14 @@ btnCheck.style.display = 'none';
 helpIcon.style.display = 'none';
 ```
 
-## デバッグ用コンソールログ
-
-ゲーム開始時とイベント発生時にコンソールに情報を出力：
-
-```javascript
-console.log('🚀 パラパラ漫画パズルが開始されました！');
-console.log('シャッフルされた順番:', frameOrder);
-console.log('カードを掴みました:', grabbedCard);
-console.log('カードを離しました。現在の順番:', frameOrder);
-console.log('クリア！正しく循環しています！');
-console.log('不正解。循環していません。現在:', frameOrder);
-```
-
 ## パフォーマンス最適化
 
 1. **単一ファイル構成**: index.html 1つで完結（外部CSSやJSなし）
 2. **CSS遷移**: `transition`で滑らかなアニメーション
 3. **AudioContext再利用**: メモリリークを防止
 4. **イベント委譲**: `event.stopPropagation()`で不要なバブリングを防止
+5. **コードのセクション分け**: CSS/JSを機能ごとにコメント付きで整理、可読性と保守性を向上
+6. **本番環境用**: デバッグ用console.logを削除、軽量化
 
 ## ブラウザ互換性
 
@@ -795,13 +831,21 @@ console.log('不正解。循環していません。現在:', frameOrder);
 
 横向き時に「縦向きでプレイしてください」と表示。
 
+## 実装済み機能
+
+- ✅ **クリアタイム表示**: ゲーム開始からクリアまでの時間を計測・表示
+- ✅ **レスポンシブデザイン**: PC/スマホ両対応、横向き警告機能
+- ✅ **効果音システム**: Web Audio APIによる6種類の効果音
+- ✅ **ヘルプシステム**: 操作説明モーダル
+- ✅ **親しみやすいUI**: ひらがな表示、明るい配色
+
 ## 今後の拡張可能性
 
 - **難易度設定**: フレーム数を増やす（12枚、18枚など）
-- **タイマー機能**: クリア時間の記録
 - **スコアシステム**: 移動回数の最小化
 - **複数テーマ**: 異なるアニメーション画像セット
 - **ランキング機能**: ローカルストレージでベストタイム保存
+- **アニメーション強化**: より滑らかなカード移動エフェクト
 
 ## ライセンス
 
@@ -809,4 +853,5 @@ console.log('不正解。循環していません。現在:', frameOrder);
 
 ## 作成日
 
-2026年1月14日
+2026年1月14日（初版）
+2026年1月15日（最終更新）
