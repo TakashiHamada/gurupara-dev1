@@ -3,8 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>インタラクティブゲーム - GitHub Pages</title>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>パラパラ漫画パズル - GitHub Pages</title>
     <style>
+        /* ========================================
+           基本スタイル
+           ======================================== */
         * {
             margin: 0;
             padding: 0;
@@ -13,214 +19,918 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FFEB3B 0%, #40E0D0 100%);
+            background-image:
+                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/></filter><rect width="300" height="300" filter="url(%23noise)" opacity="0.05"/></svg>'),
+                linear-gradient(135deg, #FFEB3B 0%, #40E0D0 100%);
+            background-blend-mode: overlay, normal;
             height: 100vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: white;
+            color: #333;
         }
 
+        /* ========================================
+           ゲームコンテナ
+           ======================================== */
         #game-container {
             position: relative;
             width: 100%;
             height: 100%;
-            cursor: crosshair;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ========================================
+           画像表示エリア
+           ======================================== */
+        #rocket-container {
+            width: 400px;
+            height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        #rocket-img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+            transition: transform 0.1s ease, filter 0.1s ease;
+        }
+
+        #rocket-img.grabbed {
+            transform: translateY(-250px);
+            filter: drop-shadow(0 0 30px rgba(255, 20, 147, 0.8));
+        }
+
+        #bottom-card {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+            opacity: 0;
+            transition: opacity 0.1s ease;
+        }
+
+        #bottom-card.visible {
+            opacity: 1;
+        }
+
+        /* ========================================
+           操作ボタン
+           ======================================== */
+        .control-button {
+            position: fixed;
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            cursor: pointer;
+            z-index: 50;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            user-select: none;
+            transition: transform 0.1s ease, background 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        .control-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #btn-prev,
+        #btn-next {
+            bottom: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+        }
+
+        #btn-prev { left: 30px; }
+        #btn-next { right: 30px; }
+
+        #btn-prev:active,
+        #btn-next:active {
+            background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
+        }
+
+        #btn-grab {
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90px;
+            height: 90px;
+            font-size: 20px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #FF6B35 0%, #FF9F1C 100%);
+            color: white;
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        #btn-grab:active {
+            transform: translateX(-50%) scale(0.95);
+            box-shadow: 0 3px 12px rgba(255, 107, 53, 0.4);
+        }
+
+        #btn-grab.grabbing {
+            background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        #btn-check {
+            top: 30px;
+            left: 30px;
+            background: linear-gradient(135deg, #2ECC71 0%, #27AE60 100%);
+            color: white;
+            width: auto;
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+        }
+
+        #btn-check:active {
+            background: linear-gradient(135deg, #27AE60 0%, #229954 100%);
+            box-shadow: 0 2px 10px rgba(46, 204, 113, 0.3);
+        }
+
+        /* ========================================
+           ヘルプ関連
+           ======================================== */
+        #help-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        #help-icon:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        #help-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 250;
+            display: none;
+        }
+
+        #help-overlay.show {
+            display: block;
         }
 
         #info-panel {
-            position: absolute;
+            position: fixed;
             top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            padding: 20px 40px;
+            left: 20px;
+            right: 20px;
+            bottom: 20px;
+            background: rgba(255, 255, 255, 0.98);
+            color: #333;
+            padding: 40px 30px;
             border-radius: 15px;
             text-align: center;
-            z-index: 100;
-            backdrop-filter: blur(10px);
+            z-index: 300;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+            display: none;
+            overflow-y: auto;
         }
 
-        h1 {
+        #info-panel.show {
+            display: block;
+        }
+
+        #info-panel h1 {
+            margin-bottom: 20px;
             font-size: 2em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            color: #FF6B35;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #close-help {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.1);
+            color: #333;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        #close-help:hover {
+            background: rgba(0, 0, 0, 0.15);
         }
 
         .instructions {
-            font-size: 1.1em;
+            font-size: 1.2em;
             margin-top: 10px;
-            line-height: 1.6;
+            line-height: 1.8;
         }
 
-        .effect {
+        .instructions div {
+            margin: 10px 0;
+        }
+
+        /* ========================================
+           クリアメッセージ
+           ======================================== */
+        #clear-message {
             position: absolute;
-            pointer-events: none;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+            color: white;
+            padding: 40px 60px;
+            border-radius: 20px;
+            font-size: 3em;
+            font-weight: bold;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 200;
+            animation: pulse 1s ease-in-out infinite;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(255, 107, 53, 0.4);
         }
 
-        /* スペースキーエフェクト用 */
-        .space-effect {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #ffd700;
-            border-radius: 50%;
-            animation: expandFade 1s ease-out forwards;
+        #clear-message .clear-time {
+            font-size: 0.5em;
+            margin-top: 15px;
+            opacity: 0.95;
+            color: white;
+            font-weight: normal;
         }
 
-        @keyframes expandFade {
-            0% {
-                transform: scale(1);
-                opacity: 1;
-            }
-            100% {
-                transform: scale(8);
-                opacity: 0;
-            }
+        #clear-message .reset-hint {
+            font-size: 0.4em;
+            margin-top: 20px;
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.95);
+            color: #FF6B35;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.2s ease;
+            display: inline-block;
+            font-weight: bold;
         }
 
-        /* マウスクリックエフェクト用 */
-        .click-effect {
-            width: 40px;
-            height: 40px;
-            background: radial-gradient(circle, #ff6b6b, #feca57);
-            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-            animation: starBurst 0.8s ease-out forwards;
+        #clear-message .reset-hint:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: scale(1.05);
         }
 
-        @keyframes starBurst {
-            0% {
-                transform: scale(0) rotate(0deg);
-                opacity: 1;
+        #clear-message .reset-hint:active {
+            background: rgba(240, 240, 240, 1);
+            transform: scale(0.98);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
             }
             50% {
-                transform: scale(1.5) rotate(180deg);
-                opacity: 1;
-            }
-            100% {
-                transform: scale(0.5) rotate(360deg);
-                opacity: 0;
+                transform: translate(-50%, -50%) scale(1.05);
             }
         }
 
-        #stats {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            padding: 15px 30px;
-            border-radius: 10px;
-            display: flex;
-            gap: 30px;
-            backdrop-filter: blur(10px);
-        }
-
-        .stat-item {
+        /* ========================================
+           横向き警告
+           ======================================== */
+        #landscape-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #FFEB3B 0%, #40E0D0 100%);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: #333;
             text-align: center;
+            padding: 20px;
         }
 
-        .stat-label {
-            font-size: 0.9em;
-            opacity: 0.8;
-            margin-bottom: 5px;
+        #landscape-warning .icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: rotate 2s ease-in-out infinite;
         }
 
-        .stat-value {
-            font-size: 1.5em;
+        #landscape-warning .message {
+            font-size: 24px;
             font-weight: bold;
-            color: #ffd700;
+        }
+
+        @keyframes rotate {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
+        }
+
+        /* ========================================
+           レスポンシブ（スマホ）
+           ======================================== */
+        @media (max-width: 768px) {
+            #rocket-container {
+                width: 100vw;
+                height: auto;
+            }
+
+            #rocket-img {
+                max-width: 100%;
+                width: 100%;
+                height: auto;
+            }
+
+            #rocket-img.grabbed {
+                transform: translateY(-30vh);
+            }
+
+            #bottom-card {
+                max-width: 100%;
+                width: 100%;
+                height: auto;
+            }
+
+            #clear-message {
+                font-size: 2.5em;
+                padding: 30px 40px;
+                width: 95%;
+            }
+
+            #clear-message .reset-hint {
+                font-size: 0.55em;
+                margin-top: 15px;
+                padding: 12px 24px;
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 500px) {
+            #landscape-warning {
+                display: flex !important;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- 横向き警告 -->
+    <div id="landscape-warning">
+        <div class="icon">📱</div>
+        <div class="message">縦向きでプレイしてください</div>
+    </div>
+
     <div id="game-container">
+        <!-- ヘルプアイコン -->
+        <div id="help-icon">❓</div>
+
+        <!-- ヘルプオーバーレイ -->
+        <div id="help-overlay"></div>
+
+        <!-- ヘルプパネル -->
         <div id="info-panel">
-            <h1>🎮 インタラクティブゲーム</h1>
+            <div id="close-help">✕</div>
+            <h1>🚀 操作説明</h1>
             <div class="instructions">
-                <div>⌨️ <strong>スペースキー</strong>を押す → 円形エフェクト</div>
-                <div>🖱️ <strong>マウスクリック</strong> → 星形エフェクト</div>
+                <div><strong>【キーボード】</strong></div>
+                <div>← →キー：コマ移動</div>
+                <div>スペースキー長押し：つかむ/はなす</div>
+                <div>Enterキー：答え合わせ</div>
+                <div style="margin-top: 15px;"><strong>【タッチ/マウス】</strong></div>
+                <div>← →ボタン：コマ移動</div>
+                <div>つかむボタン：つかむ/はなす</div>
+                <div>答え合わせボタン：答え合わせ</div>
             </div>
         </div>
 
-        <div id="stats">
-            <div class="stat-item">
-                <div class="stat-label">スペースキー</div>
-                <div class="stat-value" id="space-count">0</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">クリック</div>
-                <div class="stat-value" id="click-count">0</div>
-            </div>
+        <!-- 画像表示エリア -->
+        <div id="rocket-container">
+            <img id="bottom-card" src="" alt="Bottom Card">
+            <img id="rocket-img" src="" alt="Rocket">
         </div>
+
+        <!-- クリアメッセージ -->
+        <div id="clear-message">
+            <div>🎉 クリア！ 🎉</div>
+            <div class="clear-time" id="clear-time"></div>
+            <div class="reset-hint" id="reset-button">もう一度プレイ</div>
+        </div>
+
+        <!-- 操作ボタン -->
+        <div id="btn-prev" class="control-button">←</div>
+        <div id="btn-next" class="control-button">→</div>
+        <div id="btn-grab" class="control-button">つかむ</div>
+        <div id="btn-check" class="control-button">答え合わせ</div>
     </div>
 
     <script>
-        const gameContainer = document.getElementById('game-container');
-        let spaceCount = 0;
-        let clickCount = 0;
+        // ========================================
+        // DOM要素の取得
+        // ========================================
+        const rocketImg = document.getElementById('rocket-img');
+        const bottomCard = document.getElementById('bottom-card');
+        const clearMessage = document.getElementById('clear-message');
+        const clearTime = document.getElementById('clear-time');
+        const helpIcon = document.getElementById('help-icon');
+        const infoPanel = document.getElementById('info-panel');
+        const helpOverlay = document.getElementById('help-overlay');
+        const closeHelp = document.getElementById('close-help');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const btnGrab = document.getElementById('btn-grab');
+        const btnCheck = document.getElementById('btn-check');
+        const resetButton = document.getElementById('reset-button');
 
-        // スペースキーが押された時の処理
+        // ========================================
+        // ゲーム状態管理
+        // ========================================
+        const FRAME_COUNT = 9;
+        const correctOrder = Array.from({ length: FRAME_COUNT }, (_, i) => i);
+        let frameOrder = [];
+        let currentIndex = 0;
+        let isAnimating = false;
+        let isGrabbing = false;
+        let grabbedCard = null;
+        let isCleared = false;
+        let isOnCooldown = false;
+        let startTime = null;
+
+        // ========================================
+        // Web Audio API
+        // ========================================
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playCorrectSound() {
+            const playTone = (frequency, startTime, duration) => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.frequency.value = frequency;
+                oscillator.type = 'sine';
+
+                gainNode.gain.setValueAtTime(0.3, startTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+                oscillator.start(startTime);
+                oscillator.stop(startTime + duration);
+            };
+
+            const now = audioContext.currentTime;
+            playTone(659.25, now, 0.15);        // E5
+            playTone(1046.50, now + 0.15, 0.3); // C6
+        }
+
+        function playIncorrectSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 100;
+            oscillator.type = 'sawtooth';
+
+            const now = audioContext.currentTime;
+            gainNode.gain.setValueAtTime(0.3, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+            oscillator.start(now);
+            oscillator.stop(now + 0.3);
+        }
+
+        function playPageFlipSound() {
+            const bufferSize = audioContext.sampleRate * 0.05;
+            const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const source = audioContext.createBufferSource();
+            const gainNode = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+
+            filter.type = 'highpass';
+            filter.frequency.value = 2000;
+
+            source.buffer = buffer;
+            source.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            const now = audioContext.currentTime;
+            gainNode.gain.setValueAtTime(0.08, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+            source.start(now);
+            source.stop(now + 0.05);
+        }
+
+        function playFastPageFlipSound() {
+            const duration = 1.8;
+            const burstDuration = 0.03;
+            const burstInterval = 0.1;
+            const numBursts = Math.floor(duration / burstInterval);
+
+            for (let i = 0; i < numBursts; i++) {
+                const startTime = audioContext.currentTime + (i * burstInterval);
+                const bufferSize = audioContext.sampleRate * burstDuration;
+                const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+
+                for (let j = 0; j < bufferSize; j++) {
+                    data[j] = Math.random() * 2 - 1;
+                }
+
+                const source = audioContext.createBufferSource();
+                const gainNode = audioContext.createGain();
+                const filter = audioContext.createBiquadFilter();
+
+                filter.type = 'highpass';
+                filter.frequency.value = 2500;
+
+                source.buffer = buffer;
+                source.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                const volume = 0.12 * (1 - (i / numBursts) * 0.3);
+                gainNode.gain.setValueAtTime(volume, startTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + burstDuration);
+
+                source.start(startTime);
+                source.stop(startTime + burstDuration);
+            }
+        }
+
+        function playGrabSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+
+            const now = audioContext.currentTime;
+            gainNode.gain.setValueAtTime(0.15, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+            oscillator.start(now);
+            oscillator.stop(now + 0.08);
+        }
+
+        function playReleaseSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 400;
+            oscillator.type = 'sine';
+
+            const now = audioContext.currentTime;
+            gainNode.gain.setValueAtTime(0.15, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+            oscillator.start(now);
+            oscillator.stop(now + 0.1);
+        }
+
+        // ========================================
+        // ゲームロジック
+        // ========================================
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        function isLoopingCorrectly(arr) {
+            if (arr.length !== correctOrder.length) return false;
+
+            for (let i = 0; i < arr.length; i++) {
+                const current = arr[i];
+                const next = arr[(i + 1) % arr.length];
+                const expectedNext = (current + 1) % correctOrder.length;
+
+                if (next !== expectedNext) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function initGame() {
+            do {
+                frameOrder = shuffleArray(correctOrder);
+            } while (isLoopingCorrectly(frameOrder));
+
+            currentIndex = 0;
+            startTime = Date.now();
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            if (isGrabbing) {
+                rocketImg.src = `images/rocket_${grabbedCard}.png`;
+                rocketImg.classList.add('grabbed');
+
+                if (frameOrder.length > 0) {
+                    const bottomIndex = currentIndex % frameOrder.length;
+                    const bottomFrameNumber = frameOrder[bottomIndex];
+                    bottomCard.src = `images/rocket_${bottomFrameNumber}.png`;
+                    bottomCard.classList.add('visible');
+                }
+            } else {
+                const frameNumber = frameOrder[currentIndex];
+                rocketImg.src = `images/rocket_${frameNumber}.png`;
+                rocketImg.classList.remove('grabbed');
+                bottomCard.classList.remove('visible');
+            }
+        }
+
+        function nextFrame() {
+            if (isAnimating) return;
+            currentIndex = (currentIndex + 1) % frameOrder.length;
+            updateDisplay();
+            playPageFlipSound();
+        }
+
+        function prevFrame() {
+            if (isAnimating) return;
+            currentIndex = (currentIndex - 1 + frameOrder.length) % frameOrder.length;
+            updateDisplay();
+            playPageFlipSound();
+        }
+
+        function grabCard() {
+            if (isAnimating || isGrabbing || isOnCooldown) return;
+
+            isGrabbing = true;
+            isOnCooldown = true;
+            grabbedCard = frameOrder[currentIndex];
+            frameOrder.splice(currentIndex, 1);
+
+            if (currentIndex >= frameOrder.length) {
+                currentIndex = frameOrder.length - 1;
+            }
+
+            updateDisplay();
+            playGrabSound();
+
+            setTimeout(() => {
+                isOnCooldown = false;
+            }, 100);
+        }
+
+        function releaseCard() {
+            if (isAnimating || !isGrabbing) return;
+
+            frameOrder.splice(currentIndex, 0, grabbedCard);
+            isGrabbing = false;
+            grabbedCard = null;
+            updateDisplay();
+            playReleaseSound();
+        }
+
+        function moveGrabbedLeft() {
+            if (!isGrabbing) return;
+
+            if (currentIndex > 0) {
+                currentIndex--;
+            } else {
+                currentIndex = frameOrder.length;
+            }
+
+            updateDisplay();
+            playPageFlipSound();
+        }
+
+        function moveGrabbedRight() {
+            if (!isGrabbing) return;
+
+            if (currentIndex < frameOrder.length) {
+                currentIndex++;
+            } else {
+                currentIndex = 0;
+            }
+
+            updateDisplay();
+            playPageFlipSound();
+        }
+
+        function checkAnswer() {
+            if (isAnimating) return;
+
+            isAnimating = true;
+            const startIndex = currentIndex;
+            let frameCount = 0;
+
+            playFastPageFlipSound();
+
+            const interval = setInterval(() => {
+                updateDisplay();
+                frameCount++;
+                currentIndex = (startIndex + frameCount) % frameOrder.length;
+
+                if (frameCount >= frameOrder.length * 2) {
+                    clearInterval(interval);
+                    currentIndex = startIndex;
+                    updateDisplay();
+
+                    setTimeout(() => {
+                        isAnimating = false;
+
+                        if (isLoopingCorrectly(frameOrder)) {
+                            playCorrectSound();
+
+                            const elapsedTime = Date.now() - startTime;
+                            const seconds = Math.floor(elapsedTime / 1000);
+                            const minutes = Math.floor(seconds / 60);
+                            const remainingSeconds = seconds % 60;
+                            const timeText = minutes > 0
+                                ? `${minutes}分${remainingSeconds}秒`
+                                : `${remainingSeconds}秒`;
+                            clearTime.textContent = `クリアタイム: ${timeText}`;
+
+                            clearMessage.style.display = 'block';
+                            isCleared = true;
+
+                            btnPrev.style.display = 'none';
+                            btnNext.style.display = 'none';
+                            btnGrab.style.display = 'none';
+                            btnCheck.style.display = 'none';
+                            helpIcon.style.display = 'none';
+                        } else {
+                            playIncorrectSound();
+                        }
+                    }, 500);
+                }
+            }, 100);
+        }
+
+        // ========================================
+        // ヘルプパネル
+        // ========================================
+        function showHelp() {
+            infoPanel.classList.add('show');
+            helpOverlay.classList.add('show');
+        }
+
+        function hideHelp() {
+            infoPanel.classList.remove('show');
+            helpOverlay.classList.remove('show');
+        }
+
+        // ========================================
+        // イベントリスナー
+        // ========================================
         document.addEventListener('keydown', (event) => {
-            if (event.code === 'Space') {
-                event.preventDefault(); // ページのスクロールを防ぐ
-                createSpaceEffect();
-                spaceCount++;
-                updateStats();
+            if (event.code === 'ArrowRight') {
+                event.preventDefault();
+                if (event.repeat) return;
+                if (isGrabbing) {
+                    moveGrabbedRight();
+                } else {
+                    nextFrame();
+                }
+            } else if (event.code === 'ArrowLeft') {
+                event.preventDefault();
+                if (event.repeat) return;
+                if (isGrabbing) {
+                    moveGrabbedLeft();
+                } else {
+                    prevFrame();
+                }
+            } else if (event.code === 'Space') {
+                event.preventDefault();
+                if (event.repeat) return;
+                if (!isGrabbing) {
+                    grabCard();
+                }
+            } else if (event.code === 'Enter') {
+                event.preventDefault();
+                if (isCleared) {
+                    location.reload();
+                } else if (!isGrabbing) {
+                    checkAnswer();
+                }
             }
         });
 
-        // マウスクリックされた時の処理
-        gameContainer.addEventListener('click', (event) => {
-            createClickEffect(event.clientX, event.clientY);
-            clickCount++;
-            updateStats();
+        document.addEventListener('keyup', (event) => {
+            if (event.code === 'Space') {
+                event.preventDefault();
+                if (isGrabbing) {
+                    releaseCard();
+                }
+            }
         });
 
-        // スペースキーのエフェクトを作成
-        function createSpaceEffect() {
-            const effect = document.createElement('div');
-            effect.className = 'effect space-effect';
+        btnPrev.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (isGrabbing) {
+                moveGrabbedLeft();
+            } else {
+                prevFrame();
+            }
+        });
 
-            // 画面中央に配置
-            effect.style.left = `${window.innerWidth / 2 - 25}px`;
-            effect.style.top = `${window.innerHeight / 2 - 25}px`;
+        btnNext.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (isGrabbing) {
+                moveGrabbedRight();
+            } else {
+                nextFrame();
+            }
+        });
 
-            gameContainer.appendChild(effect);
+        btnGrab.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (!isGrabbing) {
+                grabCard();
+                btnGrab.textContent = 'はなす';
+                btnGrab.classList.add('grabbing');
+            } else {
+                releaseCard();
+                btnGrab.textContent = 'つかむ';
+                btnGrab.classList.remove('grabbing');
+            }
+        });
 
-            // アニメーション終了後に要素を削除
-            setTimeout(() => {
-                effect.remove();
-            }, 1000);
-        }
+        btnCheck.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (isCleared) {
+                location.reload();
+            } else if (!isGrabbing) {
+                checkAnswer();
+            }
+        });
 
-        // クリックエフェクトを作成
-        function createClickEffect(x, y) {
-            const effect = document.createElement('div');
-            effect.className = 'effect click-effect';
+        resetButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            location.reload();
+        });
 
-            // クリック位置に配置
-            effect.style.left = `${x - 20}px`;
-            effect.style.top = `${y - 20}px`;
+        helpIcon.addEventListener('click', showHelp);
+        closeHelp.addEventListener('click', hideHelp);
+        helpOverlay.addEventListener('click', hideHelp);
 
-            gameContainer.appendChild(effect);
-
-            // アニメーション終了後に要素を削除
-            setTimeout(() => {
-                effect.remove();
-            }, 800);
-        }
-
-        // 統計情報を更新
-        function updateStats() {
-            document.getElementById('space-count').textContent = spaceCount;
-            document.getElementById('click-count').textContent = clickCount;
-        }
-
-        // 初回メッセージ
-        console.log('🎮 ゲームが読み込まれました！');
-        console.log('スペースキーを押すか、画面をクリックしてみてください。');
+        // ========================================
+        // ゲーム開始
+        // ========================================
+        initGame();
     </script>
 </body>
 </html>
