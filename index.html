@@ -485,7 +485,8 @@
         // ========================================
         // ゲーム状態管理
         // ========================================
-        const correctOrder = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+        const FRAME_COUNT = 9;
+        const correctOrder = Array.from({ length: FRAME_COUNT }, (_, i) => i);
         let frameOrder = [];
         let currentIndex = 0;
         let isAnimating = false;
