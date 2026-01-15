@@ -513,7 +513,7 @@
                 oscillator.type = 'sine';
 
                 gainNode.gain.setValueAtTime(0.3, startTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
                 oscillator.start(startTime);
                 oscillator.stop(startTime + duration);
@@ -536,7 +536,7 @@
 
             const now = audioContext.currentTime;
             gainNode.gain.setValueAtTime(0.3, now);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
 
             oscillator.start(now);
             oscillator.stop(now + 0.3);
@@ -565,7 +565,7 @@
 
             const now = audioContext.currentTime;
             gainNode.gain.setValueAtTime(0.08, now);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
 
             source.start(now);
             source.stop(now + 0.05);
@@ -601,7 +601,7 @@
 
                 const volume = 0.12 * (1 - (i / numBursts) * 0.3);
                 gainNode.gain.setValueAtTime(volume, startTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + burstDuration);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + burstDuration);
 
                 source.start(startTime);
                 source.stop(startTime + burstDuration);
@@ -620,7 +620,7 @@
 
             const now = audioContext.currentTime;
             gainNode.gain.setValueAtTime(0.15, now);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
 
             oscillator.start(now);
             oscillator.stop(now + 0.08);
@@ -638,7 +638,7 @@
 
             const now = audioContext.currentTime;
             gainNode.gain.setValueAtTime(0.15, now);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
 
             oscillator.start(now);
             oscillator.stop(now + 0.1);
