@@ -435,11 +435,11 @@
             <div class="instructions">
                 <div><strong>【キーボード】</strong></div>
                 <div>← →キー：コマ移動</div>
-                <div>スペースキー長押し：掴む/離す</div>
+                <div>スペースキー長押し：つかむ/はなす</div>
                 <div>Enterキー：答え合わせ</div>
                 <div style="margin-top: 15px;"><strong>【タッチ/マウス】</strong></div>
                 <div>← →ボタン：コマ移動</div>
-                <div>掴むボタン：掴む/離す</div>
+                <div>つかむボタン：つかむ/はなす</div>
                 <div>答え合わせボタン：答え合わせ</div>
             </div>
         </div>
@@ -460,7 +460,7 @@
         <!-- 操作ボタン -->
         <div id="btn-prev" class="control-button">←</div>
         <div id="btn-next" class="control-button">→</div>
-        <div id="btn-grab" class="control-button">掴む</div>
+        <div id="btn-grab" class="control-button">つかむ</div>
         <div id="btn-check" class="control-button">答え合わせ</div>
     </div>
 
@@ -897,11 +897,11 @@
             event.stopPropagation();
             if (!isGrabbing) {
                 grabCard();
-                btnGrab.textContent = '離す';
+                btnGrab.textContent = 'はなす';
                 btnGrab.classList.add('grabbing');
             } else {
                 releaseCard();
-                btnGrab.textContent = '掴む';
+                btnGrab.textContent = 'つかむ';
                 btnGrab.classList.remove('grabbing');
             }
         });
