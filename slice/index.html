@@ -199,13 +199,6 @@
             font-weight: bold;
             font-size: 18px;
         }
-
-        .frame-info {
-            margin-top: 10px;
-            text-align: center;
-            color: #667eea;
-            font-size: 12px;
-        }
     </style>
 </head>
 <body>
@@ -235,7 +228,6 @@
                 <div class="loading-text">読み込み中...</div>
             </div>
         </div>
-        <div class="frame-info" id="frameInfo"></div>
     </div>
 
     <script>
@@ -274,7 +266,6 @@
         const animationSelect = document.getElementById('animationSelect');
         const speedButtons = document.querySelectorAll('.speed-btn');
         const loadingOverlay = document.getElementById('loadingOverlay');
-        const frameInfo = document.getElementById('frameInfo');
 
         // アニメーション状態
         let currentImage = null;
@@ -385,9 +376,6 @@
             const dy = (canvas.height - dh) / 2;
 
             ctx.drawImage(currentImage, sx, sy, sw, sh, dx, dy, dw, dh);
-
-            // フレーム情報表示（キャンバスの外の下に）
-            frameInfo.textContent = `Frame: ${currentFrame + 1} / ${totalFrames}`;
         }
 
         // アニメーション開始
