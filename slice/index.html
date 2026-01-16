@@ -149,6 +149,7 @@
             padding: 20px;
             background-color: #fafafa;
             border-radius: 8px;
+            position: relative;
         }
 
         canvas {
@@ -158,6 +159,45 @@
             background-color: white;
             max-width: 100%;
             height: auto;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            z-index: 10;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #e0e0e0;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-left: 15px;
+            color: #667eea;
+            font-weight: bold;
+            font-size: 18px;
         }
     </style>
 </head>
@@ -183,6 +223,10 @@
 
         <div class="canvas-container">
             <canvas id="mainCanvas" width="600" height="600"></canvas>
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="spinner"></div>
+                <div class="loading-text">読み込み中...</div>
+            </div>
         </div>
     </div>
 
@@ -221,6 +265,7 @@
         const ctx = canvas.getContext('2d');
         const animationSelect = document.getElementById('animationSelect');
         const speedButtons = document.querySelectorAll('.speed-btn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
 
         // アニメーション状態
         let currentImage = null;
@@ -281,13 +326,22 @@
             // 既存のアニメーションを停止
             stopAnimation();
 
+            // ローディング表示を表示
+            loadingOverlay.classList.add('show');
+
             const img = new Image();
             img.onload = () => {
                 currentImage = img;
                 currentFrame = 0;
                 drawFrame();
+                // ローディング表示を非表示
+                loadingOverlay.classList.remove('show');
                 // 自動的に再生開始
                 startAnimation();
+            };
+            img.onerror = () => {
+                // エラー時もローディング表示を非表示
+                loadingOverlay.classList.remove('show');
             };
             img.src = filename;
         });
