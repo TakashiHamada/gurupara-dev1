@@ -377,11 +377,11 @@
 
             ctx.drawImage(currentImage, sx, sy, sw, sh, dx, dy, dw, dh);
 
-            // フレーム情報表示
+            // フレーム情報表示（アニメの下に小さく）
             ctx.fillStyle = '#667eea';
-            ctx.font = '16px Arial';
-            ctx.textAlign = 'left';
-            ctx.fillText(`Frame: ${currentFrame + 1} / ${totalFrames}`, 10, 25);
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`Frame: ${currentFrame + 1} / ${totalFrames}`, canvas.width / 2, canvas.height - 10);
         }
 
         // アニメーション開始
