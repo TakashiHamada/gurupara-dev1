@@ -44,7 +44,7 @@
             margin-bottom: 15px;
         }
 
-        select, input[type="range"] {
+        select {
             width: 300px;
             max-width: 100%;
             padding: 8px;
@@ -52,8 +52,30 @@
             border: 1px solid #ddd;
         }
 
-        input[type="range"] {
-            vertical-align: middle;
+        .speed-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .speed-btn {
+            background-color: #e0e0e0;
+            color: #333;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .speed-btn:hover {
+            background-color: #d0d0d0;
+        }
+
+        .speed-btn.active {
+            background-color: #667eea;
+            color: white;
         }
 
         @media (max-width: 768px) {
@@ -61,9 +83,20 @@
                 margin-bottom: 20px;
             }
 
-            select, input[type="range"] {
+            select {
                 width: 100%;
                 max-width: 100%;
+            }
+
+            .speed-buttons {
+                flex-direction: row;
+                gap: 8px;
+            }
+
+            .speed-btn {
+                flex: 1;
+                padding: 8px 12px;
+                font-size: 14px;
             }
         }
 
@@ -83,14 +116,6 @@
             max-width: 100%;
             height: auto;
         }
-
-        .value-display {
-            display: inline-block;
-            min-width: 50px;
-            text-align: right;
-            color: #667eea;
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
@@ -103,8 +128,11 @@
             </div>
 
             <div class="control-group">
-                <input type="range" id="speedSlider" min="1" max="30" value="10">
-                <span class="value-display" id="speedValue">10</span>
+                <div class="speed-buttons">
+                    <button class="speed-btn" data-speed="200">速い</button>
+                    <button class="speed-btn active" data-speed="500">普通</button>
+                    <button class="speed-btn" data-speed="800">遅い</button>
+                </div>
             </div>
         </div>
 
@@ -147,14 +175,13 @@
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
         const animationSelect = document.getElementById('animationSelect');
-        const speedSlider = document.getElementById('speedSlider');
-        const speedValue = document.getElementById('speedValue');
+        const speedButtons = document.querySelectorAll('.speed-btn');
 
         // アニメーション状態
         let currentImage = null;
         let currentFrame = 0;
         let totalFrames = 9;
-        let fps = 10;
+        let intervalMs = 500; // デフォルトは普通（0.5秒）
         let isPlaying = false;
         let animationInterval = null;
 
@@ -184,14 +211,21 @@
         // 初期サイズ設定
         resizeCanvas();
 
-        // 速度スライダーの値表示を更新
-        speedSlider.addEventListener('input', (e) => {
-            fps = parseInt(e.target.value);
-            speedValue.textContent = fps;
-            if (isPlaying) {
-                stopAnimation();
-                startAnimation();
-            }
+        // 速度ボタンのイベントリスナー
+        speedButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // すべてのボタンからactiveクラスを削除
+                speedButtons.forEach(b => b.classList.remove('active'));
+                // クリックされたボタンにactiveクラスを追加
+                btn.classList.add('active');
+                // 速度を更新
+                intervalMs = parseInt(btn.dataset.speed);
+                // 再生中の場合は再起動
+                if (isPlaying) {
+                    stopAnimation();
+                    startAnimation();
+                }
+            });
         });
 
         // アニメーション選択
@@ -258,7 +292,7 @@
             animationInterval = setInterval(() => {
                 currentFrame = (currentFrame + 1) % totalFrames;
                 drawFrame();
-            }, 1000 / fps);
+            }, intervalMs);
         }
 
         // アニメーション停止
