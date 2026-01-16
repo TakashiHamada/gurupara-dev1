@@ -199,14 +199,27 @@
             font-weight: bold;
             font-size: 18px;
         }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <button class="reload-btn" id="reloadBtn">🔄</button>
+        <button class="reload-btn" id="reloadBtn" aria-label="ページをリロード">🔄</button>
 
         <div class="controls">
             <div class="control-group">
+                <label for="animationSelect" class="visually-hidden">アニメーションを選択</label>
                 <select id="animationSelect">
                     <option value="">-- 選択してください --</option>
                 </select>
