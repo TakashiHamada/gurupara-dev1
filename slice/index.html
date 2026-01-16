@@ -22,6 +22,16 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
 
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 15px;
+            }
+        }
+
         h1 {
             color: #333;
             border-bottom: 3px solid #667eea;
@@ -80,6 +90,7 @@
 
         select, input[type="range"] {
             width: 300px;
+            max-width: 100%;
             padding: 8px;
             border-radius: 4px;
             border: 1px solid #ddd;
@@ -87,6 +98,38 @@
 
         input[type="range"] {
             vertical-align: middle;
+        }
+
+        @media (max-width: 768px) {
+            .control-group {
+                margin-bottom: 20px;
+            }
+
+            label {
+                display: block;
+                width: 100%;
+                margin-bottom: 8px;
+            }
+
+            select, input[type="range"] {
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .reload-btn {
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+                padding-right: 100px;
+            }
+
+            button {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
         }
 
         button {
@@ -122,6 +165,8 @@
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             background-color: white;
+            max-width: 100%;
+            height: auto;
         }
 
         .status {
@@ -239,6 +284,25 @@
         let isPlaying = false;
         let animationInterval = null;
 
+        // キャンバスサイズを調整
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const containerWidth = container.clientWidth - 40; // padding分を引く
+            const size = Math.min(containerWidth, 600); // 最大600px
+            canvas.width = size;
+            canvas.height = size;
+
+            if (currentImage) {
+                drawFrame();
+            } else {
+                // 初期表示
+                ctx.fillStyle = '#667eea';
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('アニメーションを選択してください', canvas.width / 2, canvas.height / 2);
+            }
+        }
+
         // アニメーションリストを生成
         animations.forEach(filename => {
             const option = document.createElement('option');
@@ -248,6 +312,9 @@
             option.textContent = name;
             animationSelect.appendChild(option);
         });
+
+        // 初期サイズ設定
+        resizeCanvas();
 
         // スライダーの値表示を更新
         frameSlider.addEventListener('input', (e) => {
@@ -365,11 +432,8 @@
             location.reload();
         });
 
-        // 初期表示
-        ctx.fillStyle = '#667eea';
-        ctx.font = '24px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('アニメーションを選択してください', canvas.width / 2, canvas.height / 2);
+        // ウィンドウリサイズ時の処理
+        window.addEventListener('resize', resizeCanvas);
     </script>
 </body>
 </html>
