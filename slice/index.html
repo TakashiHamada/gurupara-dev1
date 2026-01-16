@@ -44,13 +44,6 @@
             margin-bottom: 15px;
         }
 
-        label {
-            display: inline-block;
-            width: 120px;
-            font-weight: bold;
-            color: #555;
-        }
-
         select, input[type="range"] {
             width: 300px;
             max-width: 100%;
@@ -66,12 +59,6 @@
         @media (max-width: 768px) {
             .control-group {
                 margin-bottom: 20px;
-            }
-
-            label {
-                display: block;
-                width: 100%;
-                margin-bottom: 8px;
             }
 
             select, input[type="range"] {
@@ -97,15 +84,6 @@
             height: auto;
         }
 
-        .status {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #fff;
-            border-radius: 4px;
-            font-size: 14px;
-            color: #666;
-        }
-
         .value-display {
             display: inline-block;
             min-width: 50px;
@@ -119,14 +97,12 @@
     <div class="container">
         <div class="controls">
             <div class="control-group">
-                <label for="animationSelect">アニメーション:</label>
                 <select id="animationSelect">
                     <option value="">-- 選択してください --</option>
                 </select>
             </div>
 
             <div class="control-group">
-                <label for="speedSlider">速度 (FPS):</label>
                 <input type="range" id="speedSlider" min="1" max="30" value="10">
                 <span class="value-display" id="speedValue">10</span>
             </div>
@@ -134,9 +110,6 @@
 
         <div class="canvas-container">
             <canvas id="mainCanvas" width="600" height="600"></canvas>
-            <div class="status">
-                <span id="statusText">アニメーションを選択してください</span>
-            </div>
         </div>
     </div>
 
@@ -176,7 +149,6 @@
         const animationSelect = document.getElementById('animationSelect');
         const speedSlider = document.getElementById('speedSlider');
         const speedValue = document.getElementById('speedValue');
-        const statusText = document.getElementById('statusText');
 
         // アニメーション状態
         let currentImage = null;
@@ -196,12 +168,6 @@
 
             if (currentImage) {
                 drawFrame();
-            } else {
-                // 初期表示
-                ctx.fillStyle = '#667eea';
-                ctx.font = '24px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('アニメーションを選択してください', canvas.width / 2, canvas.height / 2);
             }
         }
 
@@ -241,12 +207,8 @@
                 currentImage = img;
                 currentFrame = 0;
                 drawFrame();
-                statusText.textContent = `読み込み完了: ${filename}`;
                 // 自動的に再生開始
                 startAnimation();
-            };
-            img.onerror = () => {
-                statusText.textContent = `エラー: ${filename} の読み込みに失敗しました`;
             };
             img.src = filename;
         });
@@ -288,12 +250,10 @@
         // アニメーション開始
         function startAnimation() {
             if (!currentImage) {
-                statusText.textContent = 'アニメーションを選択してください';
                 return;
             }
 
             isPlaying = true;
-            statusText.textContent = '再生中...';
 
             animationInterval = setInterval(() => {
                 currentFrame = (currentFrame + 1) % totalFrames;
@@ -308,7 +268,6 @@
                 clearInterval(animationInterval);
                 animationInterval = null;
             }
-            statusText.textContent = '停止';
         }
 
         // ウィンドウリサイズ時の処理
