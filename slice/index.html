@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>9-Slice Animation Experiment</title>
+    <title>9-Slice Animation Player</title>
     <style>
         body {
             margin: 0;
             padding: 20px;
             font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
         }
 
         .container {
@@ -17,55 +18,327 @@
             margin: 0 auto;
             background-color: white;
             padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
 
         h1 {
             color: #333;
-            border-bottom: 3px solid #4CAF50;
+            border-bottom: 3px solid #667eea;
             padding-bottom: 10px;
+            margin-bottom: 20px;
         }
 
         .info {
-            background-color: #e8f5e9;
+            background-color: #e8f0fe;
             padding: 15px;
-            border-radius: 4px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .controls {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
             margin: 20px 0;
         }
 
-        canvas {
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: inline-block;
+            width: 120px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        select, input[type="range"] {
+            width: 300px;
+            padding: 8px;
+            border-radius: 4px;
             border: 1px solid #ddd;
-            display: block;
-            margin: 20px auto;
+        }
+
+        input[type="range"] {
+            vertical-align: middle;
+        }
+
+        button {
+            background-color: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #5568d3;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .canvas-container {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #fafafa;
+            border-radius: 8px;
+        }
+
+        canvas {
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background-color: white;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 10px;
             background-color: #fff;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .value-display {
+            display: inline-block;
+            min-width: 50px;
+            text-align: right;
+            color: #667eea;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>9-Slice Animation Experiment</h1>
+        <h1>🎬 9-Slice Animation Player</h1>
 
         <div class="info">
-            <p>これは実験的な9-Sliceアニメーションプロジェクトです。</p>
-            <p>将来的にはメインプロジェクトと統合される可能性があります。</p>
+            <p><strong>使い方:</strong> アニメーションを選択して再生ボタンを押してください。速度とフレーム数を調整できます。</p>
         </div>
 
-        <canvas id="mainCanvas" width="800" height="600"></canvas>
+        <div class="controls">
+            <div class="control-group">
+                <label for="animationSelect">アニメーション:</label>
+                <select id="animationSelect">
+                    <option value="">-- 選択してください --</option>
+                </select>
+            </div>
 
-        <script>
-            const canvas = document.getElementById('mainCanvas');
-            const ctx = canvas.getContext('2d');
+            <div class="control-group">
+                <label for="frameSlider">フレーム数:</label>
+                <input type="range" id="frameSlider" min="2" max="12" value="9">
+                <span class="value-display" id="frameValue">9</span>
+            </div>
 
-            // Simple initialization
-            ctx.fillStyle = '#4CAF50';
-            ctx.font = '24px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('9-Slice Animation Project', canvas.width / 2, canvas.height / 2);
-            ctx.font = '16px Arial';
-            ctx.fillStyle = '#666';
-            ctx.fillText('開発準備完了', canvas.width / 2, canvas.height / 2 + 40);
-        </script>
+            <div class="control-group">
+                <label for="speedSlider">速度 (FPS):</label>
+                <input type="range" id="speedSlider" min="1" max="30" value="10">
+                <span class="value-display" id="speedValue">10</span>
+            </div>
+
+            <div class="control-group">
+                <label></label>
+                <button id="playBtn">▶ 再生</button>
+                <button id="pauseBtn">⏸ 停止</button>
+                <button id="resetBtn">⏮ リセット</button>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="mainCanvas" width="600" height="600"></canvas>
+            <div class="status">
+                <span id="statusText">アニメーションを選択してください</span>
+            </div>
+        </div>
     </div>
+
+    <script>
+        // アニメーション一覧
+        const animations = [
+            'apple.jpg',
+            'baseball.jpg',
+            'blowing_kiss.jpg',
+            'bubble_gum.jpg',
+            'crying.jpg',
+            'elephant_spraying_water.jpg',
+            'finger_snap.jpg',
+            'flexing_muscle.jpg',
+            'flower_blooming.jpg',
+            'handshake.jpg',
+            'hourglass.jpg',
+            'jumping_fish.jpg',
+            'jumping_frog.jpg',
+            'lifting_package.jpg',
+            'lightning.jpg',
+            'monkey_to_human_evolution.jpg',
+            'person_bowing.jpg',
+            'person_shrugging.jpg',
+            'ramen.jpg',
+            'shooting_arrow.jpg',
+            'soccer_goal.jpg',
+            'spinning_girl.jpg',
+            'sticking_tongue_out.jpg',
+            'tadpole_to_frog.jpg',
+            'thinking_person.jpg'
+        ];
+
+        // DOM要素
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const animationSelect = document.getElementById('animationSelect');
+        const frameSlider = document.getElementById('frameSlider');
+        const frameValue = document.getElementById('frameValue');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+        const playBtn = document.getElementById('playBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const statusText = document.getElementById('statusText');
+
+        // アニメーション状態
+        let currentImage = null;
+        let currentFrame = 0;
+        let totalFrames = 9;
+        let fps = 10;
+        let isPlaying = false;
+        let animationInterval = null;
+
+        // アニメーションリストを生成
+        animations.forEach(filename => {
+            const option = document.createElement('option');
+            option.value = filename;
+            // ファイル名を読みやすく変換
+            const name = filename.replace('.jpg', '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            option.textContent = name;
+            animationSelect.appendChild(option);
+        });
+
+        // スライダーの値表示を更新
+        frameSlider.addEventListener('input', (e) => {
+            totalFrames = parseInt(e.target.value);
+            frameValue.textContent = totalFrames;
+            if (currentImage) {
+                currentFrame = 0;
+                drawFrame();
+            }
+        });
+
+        speedSlider.addEventListener('input', (e) => {
+            fps = parseInt(e.target.value);
+            speedValue.textContent = fps;
+            if (isPlaying) {
+                stopAnimation();
+                startAnimation();
+            }
+        });
+
+        // アニメーション選択
+        animationSelect.addEventListener('change', (e) => {
+            const filename = e.target.value;
+            if (!filename) return;
+
+            const img = new Image();
+            img.onload = () => {
+                currentImage = img;
+                currentFrame = 0;
+                drawFrame();
+                statusText.textContent = `読み込み完了: ${filename}`;
+            };
+            img.onerror = () => {
+                statusText.textContent = `エラー: ${filename} の読み込みに失敗しました`;
+            };
+            img.src = filename;
+        });
+
+        // フレーム描画
+        function drawFrame() {
+            if (!currentImage) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const cols = Math.ceil(Math.sqrt(totalFrames));
+            const rows = Math.ceil(totalFrames / cols);
+
+            const frameWidth = currentImage.width / cols;
+            const frameHeight = currentImage.height / rows;
+
+            const col = currentFrame % cols;
+            const row = Math.floor(currentFrame / cols);
+
+            const sx = col * frameWidth;
+            const sy = row * frameHeight;
+
+            // キャンバス中央に描画
+            const scale = Math.min(canvas.width / frameWidth, canvas.height / frameHeight) * 0.9;
+            const dw = frameWidth * scale;
+            const dh = frameHeight * scale;
+            const dx = (canvas.width - dw) / 2;
+            const dy = (canvas.height - dh) / 2;
+
+            ctx.drawImage(currentImage, sx, sy, frameWidth, frameHeight, dx, dy, dw, dh);
+
+            // フレーム情報表示
+            ctx.fillStyle = '#667eea';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Frame: ${currentFrame + 1} / ${totalFrames}`, 10, 25);
+        }
+
+        // アニメーション開始
+        function startAnimation() {
+            if (!currentImage) {
+                statusText.textContent = 'アニメーションを選択してください';
+                return;
+            }
+
+            isPlaying = true;
+            statusText.textContent = '再生中...';
+
+            animationInterval = setInterval(() => {
+                currentFrame = (currentFrame + 1) % totalFrames;
+                drawFrame();
+            }, 1000 / fps);
+        }
+
+        // アニメーション停止
+        function stopAnimation() {
+            isPlaying = false;
+            if (animationInterval) {
+                clearInterval(animationInterval);
+                animationInterval = null;
+            }
+            statusText.textContent = '停止';
+        }
+
+        // アニメーションリセット
+        function resetAnimation() {
+            stopAnimation();
+            currentFrame = 0;
+            drawFrame();
+            statusText.textContent = 'リセット完了';
+        }
+
+        // ボタンイベント
+        playBtn.addEventListener('click', startAnimation);
+        pauseBtn.addEventListener('click', stopAnimation);
+        resetBtn.addEventListener('click', resetAnimation);
+
+        // 初期表示
+        ctx.fillStyle = '#667eea';
+        ctx.font = '24px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('アニメーションを選択してください', canvas.width / 2, canvas.height / 2);
+    </script>
 </body>
 </html>
