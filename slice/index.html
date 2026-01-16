@@ -2,14 +2,26 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>9-Slice Animation Experiment</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>9-Slice Animation Player</title>
     <style>
+        * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
         body {
             margin: 0;
             padding: 20px;
             font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100vh;
         }
 
         .container {
@@ -17,55 +29,401 @@
             margin: 0 auto;
             background-color: white;
             padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .reload-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: #667eea;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .reload-btn:hover {
+            background-color: #5568d3;
+        }
+
+        .reload-btn:active {
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 15px;
+            }
+        }
+
+
+        .controls {
+            background-color: #f5f5f5;
+            padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        h1 {
-            color: #333;
-            border-bottom: 3px solid #4CAF50;
-            padding-bottom: 10px;
-        }
-
-        .info {
-            background-color: #e8f5e9;
-            padding: 15px;
-            border-radius: 4px;
             margin: 20px 0;
         }
 
-        canvas {
+        .control-group {
+            margin-bottom: 10px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        select {
+            width: 300px;
+            max-width: 100%;
+            padding: 8px;
+            border-radius: 4px;
             border: 1px solid #ddd;
-            display: block;
-            margin: 20px auto;
-            background-color: #fff;
+        }
+
+        .speed-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .speed-btn {
+            background-color: #e0e0e0;
+            color: #333;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .speed-btn:hover {
+            background-color: #d0d0d0;
+        }
+
+        .speed-btn.active {
+            background-color: #667eea;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .control-group {
+                margin-bottom: 20px;
+            }
+
+            select {
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .speed-buttons {
+                flex-direction: row;
+                gap: 8px;
+            }
+
+            .speed-btn {
+                flex: 1;
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+        }
+
+        .canvas-container {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #fafafa;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        canvas {
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background-color: white;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            z-index: 10;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #e0e0e0;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-left: 15px;
+            color: #667eea;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>9-Slice Animation Experiment</h1>
+        <button class="reload-btn" id="reloadBtn" aria-label="ページをリロード">🔄</button>
 
-        <div class="info">
-            <p>これは実験的な9-Sliceアニメーションプロジェクトです。</p>
-            <p>将来的にはメインプロジェクトと統合される可能性があります。</p>
+        <div class="controls">
+            <div class="control-group">
+                <label for="animationSelect" class="visually-hidden">アニメーションを選択</label>
+                <select id="animationSelect">
+                    <option value="">-- 選択してください --</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <div class="speed-buttons">
+                    <button class="speed-btn" data-speed="150">速い</button>
+                    <button class="speed-btn active" data-speed="400">普通</button>
+                    <button class="speed-btn" data-speed="800">遅い</button>
+                </div>
+            </div>
         </div>
 
-        <canvas id="mainCanvas" width="800" height="600"></canvas>
-
-        <script>
-            const canvas = document.getElementById('mainCanvas');
-            const ctx = canvas.getContext('2d');
-
-            // Simple initialization
-            ctx.fillStyle = '#4CAF50';
-            ctx.font = '24px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('9-Slice Animation Project', canvas.width / 2, canvas.height / 2);
-            ctx.font = '16px Arial';
-            ctx.fillStyle = '#666';
-            ctx.fillText('開発準備完了', canvas.width / 2, canvas.height / 2 + 40);
-        </script>
+        <div class="canvas-container">
+            <canvas id="mainCanvas" width="600" height="600"></canvas>
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="spinner"></div>
+                <div class="loading-text">読み込み中...</div>
+            </div>
+        </div>
     </div>
+
+    <script>
+        // アニメーション一覧
+        const animations = [
+            'images/apple.jpg',
+            'images/baseball.jpg',
+            'images/blowing_kiss.jpg',
+            'images/bubble_gum.jpg',
+            'images/crying.jpg',
+            'images/elephant_spraying_water.jpg',
+            'images/finger_snap.jpg',
+            'images/flexing_muscle.jpg',
+            'images/flower_blooming.jpg',
+            'images/handshake.jpg',
+            'images/hourglass.jpg',
+            'images/jumping_fish.jpg',
+            'images/jumping_frog.jpg',
+            'images/lifting_package.jpg',
+            'images/lightning.jpg',
+            'images/monkey_to_human_evolution.jpg',
+            'images/person_bowing.jpg',
+            'images/person_shrugging.jpg',
+            'images/ramen.jpg',
+            'images/shooting_arrow.jpg',
+            'images/soccer_goal.jpg',
+            'images/spinning_girl.jpg',
+            'images/sticking_tongue_out.jpg',
+            'images/tadpole_to_frog.jpg',
+            'images/thinking_person.jpg'
+        ];
+
+        // DOM要素
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const animationSelect = document.getElementById('animationSelect');
+        const speedButtons = document.querySelectorAll('.speed-btn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        // 定数
+        const FRAME_INSET = 5; // フレームの境界線を避けるため、各辺から内側に切り取るピクセル数
+
+        // アニメーション状態
+        let currentImage = null;
+        let currentFrame = 0;
+        let totalFrames = 9;
+        let intervalMs = 400; // デフォルトは普通（0.4秒）
+        let isPlaying = false;
+        let animationInterval = null;
+
+        // キャンバスサイズを調整
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const containerWidth = container.clientWidth - 40; // padding分を引く
+            const size = Math.min(containerWidth, 600); // 最大600px
+            canvas.width = size;
+            canvas.height = size;
+
+            if (currentImage) {
+                drawFrame();
+            }
+        }
+
+        // アニメーションリストを生成
+        animations.forEach(filename => {
+            const option = document.createElement('option');
+            option.value = filename;
+            // ファイル名を読みやすく変換
+            const name = filename.replace('.jpg', '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            option.textContent = name;
+            animationSelect.appendChild(option);
+        });
+
+        // 初期サイズ設定
+        resizeCanvas();
+
+        // 速度ボタンのイベントリスナー
+        speedButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // すべてのボタンからactiveクラスを削除
+                speedButtons.forEach(b => b.classList.remove('active'));
+                // クリックされたボタンにactiveクラスを追加
+                btn.classList.add('active');
+                // 速度を更新
+                intervalMs = parseInt(btn.dataset.speed);
+                // 再生中の場合は再起動
+                if (isPlaying) {
+                    stopAnimation();
+                    startAnimation();
+                }
+            });
+        });
+
+        // アニメーション選択
+        animationSelect.addEventListener('change', (e) => {
+            const filename = e.target.value;
+            if (!filename) return;
+
+            // 既存のアニメーションを停止
+            stopAnimation();
+
+            // ローディング表示を表示
+            loadingOverlay.classList.add('show');
+
+            const img = new Image();
+            img.onload = () => {
+                currentImage = img;
+                currentFrame = 0;
+                drawFrame();
+                // ローディング表示を非表示
+                loadingOverlay.classList.remove('show');
+                // 自動的に再生開始
+                startAnimation();
+            };
+            img.onerror = () => {
+                // エラー時もローディング表示を非表示
+                loadingOverlay.classList.remove('show');
+            };
+            img.src = filename;
+        });
+
+        // フレーム描画
+        function drawFrame() {
+            if (!currentImage) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const cols = Math.ceil(Math.sqrt(totalFrames));
+            const rows = Math.ceil(totalFrames / cols);
+
+            const frameWidth = currentImage.width / cols;
+            const frameHeight = currentImage.height / rows;
+
+            const col = currentFrame % cols;
+            const row = Math.floor(currentFrame / cols);
+
+            // 境界線を避けるため、少し内側から切り取る
+            const sx = col * frameWidth + FRAME_INSET;
+            const sy = row * frameHeight + FRAME_INSET;
+            const sw = frameWidth - FRAME_INSET * 2;
+            const sh = frameHeight - FRAME_INSET * 2;
+
+            // キャンバス中央に描画
+            const scale = Math.min(canvas.width / sw, canvas.height / sh) * 0.9;
+            const dw = sw * scale;
+            const dh = sh * scale;
+            const dx = (canvas.width - dw) / 2;
+            const dy = (canvas.height - dh) / 2;
+
+            ctx.drawImage(currentImage, sx, sy, sw, sh, dx, dy, dw, dh);
+        }
+
+        // アニメーション開始
+        function startAnimation() {
+            if (!currentImage) {
+                return;
+            }
+
+            isPlaying = true;
+
+            animationInterval = setInterval(() => {
+                currentFrame = (currentFrame + 1) % totalFrames;
+                drawFrame();
+            }, intervalMs);
+        }
+
+        // アニメーション停止
+        function stopAnimation() {
+            isPlaying = false;
+            if (animationInterval) {
+                clearInterval(animationInterval);
+                animationInterval = null;
+            }
+        }
+
+        // ウィンドウリサイズ時の処理
+        window.addEventListener('resize', resizeCanvas);
+
+        // リロードボタン
+        const reloadBtn = document.getElementById('reloadBtn');
+        reloadBtn.addEventListener('click', () => {
+            location.reload();
+        });
+    </script>
 </body>
 </html>
