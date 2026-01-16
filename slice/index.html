@@ -27,6 +27,29 @@
             border-bottom: 3px solid #667eea;
             padding-bottom: 10px;
             margin-bottom: 20px;
+            position: relative;
+        }
+
+        .reload-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .reload-btn:hover {
+            background-color: #5568d3;
+        }
+
+        .reload-btn:active {
+            transform: scale(0.98);
         }
 
         .info {
@@ -121,7 +144,9 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎬 9-Slice Animation Player</h1>
+        <h1>🎬 9-Slice Animation Player
+            <button class="reload-btn" id="reloadBtn">🔄 リロード</button>
+        </h1>
 
         <div class="info">
             <p><strong>使い方:</strong> アニメーションを選択して再生ボタンを押してください。速度とフレーム数を調整できます。</p>
@@ -333,6 +358,12 @@
         playBtn.addEventListener('click', startAnimation);
         pauseBtn.addEventListener('click', stopAnimation);
         resetBtn.addEventListener('click', resetAnimation);
+
+        // リロードボタン
+        const reloadBtn = document.getElementById('reloadBtn');
+        reloadBtn.addEventListener('click', () => {
+            location.reload();
+        });
 
         // 初期表示
         ctx.fillStyle = '#667eea';
