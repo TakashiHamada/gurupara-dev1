@@ -307,17 +307,21 @@
             const col = currentFrame % cols;
             const row = Math.floor(currentFrame / cols);
 
-            const sx = col * frameWidth;
-            const sy = row * frameHeight;
+            // 境界線を避けるため、少し内側から切り取る
+            const inset = 3; // 各辺から3ピクセル内側
+            const sx = col * frameWidth + inset;
+            const sy = row * frameHeight + inset;
+            const sw = frameWidth - inset * 2;
+            const sh = frameHeight - inset * 2;
 
             // キャンバス中央に描画
-            const scale = Math.min(canvas.width / frameWidth, canvas.height / frameHeight) * 0.9;
-            const dw = frameWidth * scale;
-            const dh = frameHeight * scale;
+            const scale = Math.min(canvas.width / sw, canvas.height / sh) * 0.9;
+            const dw = sw * scale;
+            const dh = sh * scale;
             const dx = (canvas.width - dw) / 2;
             const dy = (canvas.height - dh) / 2;
 
-            ctx.drawImage(currentImage, sx, sy, frameWidth, frameHeight, dx, dy, dw, dh);
+            ctx.drawImage(currentImage, sx, sy, sw, sh, dx, dy, dw, dh);
 
             // フレーム情報表示
             ctx.fillStyle = '#667eea';
