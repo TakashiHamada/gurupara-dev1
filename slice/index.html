@@ -2,15 +2,26 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>9-Slice Animation Player</title>
     <style>
+        * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
         body {
             margin: 0;
             padding: 20px;
             font-family: Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100vh;
         }
 
         .container {
@@ -20,6 +31,34 @@
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .reload-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: #667eea;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .reload-btn:hover {
+            background-color: #5568d3;
+        }
+
+        .reload-btn:active {
+            transform: scale(0.95);
         }
 
         @media (max-width: 768px) {
@@ -41,7 +80,11 @@
         }
 
         .control-group {
-            margin-bottom: 15px;
+            margin-bottom: 10px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
         }
 
         select {
@@ -120,6 +163,8 @@
 </head>
 <body>
     <div class="container">
+        <button class="reload-btn" id="reloadBtn">🔄</button>
+
         <div class="controls">
             <div class="control-group">
                 <select id="animationSelect">
@@ -306,6 +351,12 @@
 
         // ウィンドウリサイズ時の処理
         window.addEventListener('resize', resizeCanvas);
+
+        // リロードボタン
+        const reloadBtn = document.getElementById('reloadBtn');
+        reloadBtn.addEventListener('click', () => {
+            location.reload();
+        });
     </script>
 </body>
 </html>
