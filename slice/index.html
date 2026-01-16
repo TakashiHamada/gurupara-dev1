@@ -267,6 +267,9 @@
         const speedButtons = document.querySelectorAll('.speed-btn');
         const loadingOverlay = document.getElementById('loadingOverlay');
 
+        // 定数
+        const FRAME_INSET = 5; // フレームの境界線を避けるため、各辺から内側に切り取るピクセル数
+
         // アニメーション状態
         let currentImage = null;
         let currentFrame = 0;
@@ -362,11 +365,10 @@
             const row = Math.floor(currentFrame / cols);
 
             // 境界線を避けるため、少し内側から切り取る
-            const inset = 5; // 各辺から5ピクセル内側
-            const sx = col * frameWidth + inset;
-            const sy = row * frameHeight + inset;
-            const sw = frameWidth - inset * 2;
-            const sh = frameHeight - inset * 2;
+            const sx = col * frameWidth + FRAME_INSET;
+            const sy = row * frameHeight + FRAME_INSET;
+            const sw = frameWidth - FRAME_INSET * 2;
+            const sh = frameHeight - FRAME_INSET * 2;
 
             // キャンバス中央に描画
             const scale = Math.min(canvas.width / sw, canvas.height / sh) * 0.9;
