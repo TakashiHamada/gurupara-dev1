@@ -199,11 +199,8 @@ export class Renderer {
         // Slide animations (simplified)
         if (state.isSliding) {
             this._drawSlideAnimation(state, frames, imgX, imgY, displaySize);
-            return;
-        }
-
-        // Check animation
-        if (state.isChecking) {
+        } else if (state.isChecking) {
+            // Check animation
             const frameIdx = state.checkAnimFrame % state.frameCount;
             if (state.checkAnimFrame % 2 === 1) {
                 // Black flash
@@ -215,33 +212,29 @@ export class Renderer {
                     ctx.drawImage(img, imgX, imgY, displaySize, displaySize);
                 }
             }
-            return;
-        }
-
-        // Clear animation
-        if (state.isPlayingClearAnim) {
+        } else if (state.isPlayingClearAnim) {
+            // Clear animation
             const frameIdx = state.clearAnimFrame % state.frameCount;
             const img = frames[frameIdx];
             if (img && img.complete) {
                 ctx.drawImage(img, imgX, imgY, displaySize, displaySize);
             }
-            return;
-        }
-
-        // Normal: draw current frame (from puzzle order)
-        if (!state.showResult || state.resultCorrect) {
-            const imageIndex = state.puzzle.getFrameAt(state.currentFrameIndex);
-            if (imageIndex !== undefined && frames[imageIndex] && frames[imageIndex].complete) {
-                ctx.drawImage(frames[imageIndex], imgX, imgY, displaySize, displaySize);
+        } else {
+            // Normal: draw current frame (from puzzle order)
+            if (!state.showResult || state.resultCorrect) {
+                const imageIndex = state.puzzle.getFrameAt(state.currentFrameIndex);
+                if (imageIndex !== undefined && frames[imageIndex] && frames[imageIndex].complete) {
+                    ctx.drawImage(frames[imageIndex], imgX, imgY, displaySize, displaySize);
+                }
             }
         }
 
-        // Grabbed thumbnail
+        // Grabbed thumbnail (always on top)
         if (state.isGrabbing && state.grabbedFrame >= 0) {
             this._drawGrabbedThumbnail(state, frames, imgX, imgY, displaySize);
         }
 
-        // Placing animation
+        // Placing animation (always on top)
         if (state.isPlacing && state.placingFrame >= 0) {
             this._drawPlacingThumbnail(state, frames, imgX, imgY, displaySize);
         }
@@ -337,11 +330,12 @@ export class Renderer {
         if (!img || !img.complete) return;
 
         const t = easeOutQuad(state.grabAnimProgress);
-        const thumbX = Config.IMAGE_OFFSET_X * t;
-        const thumbY = Config.IMAGE_OFFSET_Y * t;
         const thumbScale = 1.0 + (0.5 - 1.0) * t;
         const cw = W * thumbScale;
         const ch = H * thumbScale;
+        // Animate from current position (0,0) to top-left corner (0,0)
+        const thumbX = 0;
+        const thumbY = 0;
 
         // White card
         ctx.fillStyle = '#fff';
@@ -367,8 +361,8 @@ export class Renderer {
         if (!img || !img.complete) return;
 
         const t = easeOutQuad(state.placeAnimProgress);
-        const thumbX = Config.IMAGE_OFFSET_X * (1 - t);
-        const thumbY = Config.IMAGE_OFFSET_Y * (1 - t);
+        const thumbX = 0;
+        const thumbY = 0;
         const thumbScale = 0.5 + (1.0 - 0.5) * t;
         const cw = W * thumbScale;
         const ch = H * thumbScale;

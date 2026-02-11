@@ -35,8 +35,8 @@ class Game {
         this.state.selectionAnimFrame = 0;
         this.selectionAnimTimer = 0;
 
-        // Crank visual
-        this.crankElement = document.getElementById('crank-handle');
+        // Crank visual (hardware shell removed)
+        this.crankElement = null;
 
         // Thank-you screen
         this.showThankYou = false;
@@ -351,11 +351,7 @@ class Game {
         const grabPressed = this.input.isGrabPressed();
 
         if (grabPressed && !state.isGrabbing && !this._isBlocked()) {
-            // Tutorial Step 1: block grab until crank rotated
-            const tutorialBlock = this.tutorial.isTutorialStage && this.tutorial.step === 1;
-            if (!tutorialBlock) {
-                this._doGrab();
-            }
+            this._doGrab();
         }
 
         if (!grabPressed && state.isGrabbing && state.grabAnimProgress >= 1) {
