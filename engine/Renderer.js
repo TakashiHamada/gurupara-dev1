@@ -384,44 +384,38 @@ export class Renderer {
         const border = Config.THUMBNAIL_BORDER;
         const amplitude = Config.THUMBNAIL_WAVE_AMPLITUDE;
         const frequency = Config.THUMBNAIL_WAVE_FREQUENCY;
-        const cornerRadius = Config.THUMBNAIL_CORNER_RADIUS;
 
         ctx.strokeStyle = '#000';
         ctx.lineWidth = border;
         ctx.globalAlpha = opacity;
 
-        // Right edge
-        ctx.beginPath();
+        // Right edge + Bottom edge as one continuous path
+        // Near the corner, dampen amplitude and blend wave direction
         const rightX = x + w;
-        for (let i = 0; i <= h - cornerRadius; i += 2) {
-            const pos = i / (h + w);
-            const wave = Math.sin(pos * frequency * Math.PI * 2 - wavePhase) * amplitude;
-            if (i === 0) ctx.moveTo(rightX + wave, y + i);
-            else ctx.lineTo(rightX + wave, y + i);
-        }
+        const totalLen = h + w;
+        const cornerFade = 30; // pixels over which to fade near corner
 
-        // Corner arc
-        const arcCX = rightX - cornerRadius;
-        const arcCY = y + h - cornerRadius;
-        const steps = 16;
-        for (let i = 0; i <= steps; i++) {
-            const angle = (i / steps) * Math.PI / 2;
-            const pos = ((h - cornerRadius) + (i / steps) * cornerRadius * Math.PI / 2) / (h + w);
-            const wave = Math.sin(pos * frequency * Math.PI * 2 + wavePhase) * amplitude;
-            const radius = cornerRadius + wave;
-            const px = arcCX + Math.sin(angle) * radius;
-            const py = arcCY + Math.cos(angle) * radius;
-            ctx.lineTo(px, py);
-        }
+        const _wavePath = () => {
+            // Right edge (top to bottom)
+            for (let i = 0; i <= h; i += 2) {
+                const pos = i / totalLen;
+                const distToCorner = h - i;
+                const fade = distToCorner < cornerFade ? distToCorner / cornerFade : 1;
+                const wave = Math.sin(pos * frequency * Math.PI * 2 - wavePhase) * amplitude * fade;
+                if (i === 0) ctx.moveTo(rightX + wave, y + i);
+                else ctx.lineTo(rightX + wave, y + i);
+            }
+            // Bottom edge (right to left, continuing from right edge)
+            for (let i = 0; i <= w; i += 2) {
+                const pos = (h + i) / totalLen;
+                const fade = i < cornerFade ? i / cornerFade : 1;
+                const wave = Math.sin(pos * frequency * Math.PI * 2 - wavePhase) * amplitude * fade;
+                ctx.lineTo(x + w - i, y + h + wave);
+            }
+        };
 
-        // Bottom edge
-        for (let i = 0; i <= w - cornerRadius; i += 2) {
-            const pos = ((h - cornerRadius) + cornerRadius * Math.PI / 2 + i) / (h + w);
-            const wave = Math.sin(pos * frequency * Math.PI * 2 - wavePhase) * amplitude;
-            const px = x + w - cornerRadius - i;
-            ctx.lineTo(px, y + h + wave);
-        }
-
+        ctx.beginPath();
+        _wavePath();
         ctx.stroke();
 
         // White outline
@@ -429,26 +423,7 @@ export class Renderer {
         ctx.lineWidth = border + Config.THUMBNAIL_BORDER_OUTLINE * 2;
         ctx.globalCompositeOperation = 'destination-over';
         ctx.beginPath();
-        // Duplicate path for outline
-        const rightX2 = x + w;
-        for (let i = 0; i <= h - cornerRadius; i += 2) {
-            const pos = i / (h + w);
-            const wave = Math.sin(pos * frequency * Math.PI * 2 - wavePhase) * amplitude;
-            if (i === 0) ctx.moveTo(rightX2 + wave, y + i);
-            else ctx.lineTo(rightX2 + wave, y + i);
-        }
-        for (let i = 0; i <= steps; i++) {
-            const angle = (i / steps) * Math.PI / 2;
-            const pos = ((h - cornerRadius) + (i / steps) * cornerRadius * Math.PI / 2) / (h + w);
-            const wave = Math.sin(pos * frequency * Math.PI * 2 + wavePhase) * amplitude;
-            const radius = cornerRadius + wave;
-            ctx.lineTo(arcCX + Math.sin(angle) * radius, arcCY + Math.cos(angle) * radius);
-        }
-        for (let i = 0; i <= w - cornerRadius; i += 2) {
-            const pos = ((h - cornerRadius) + cornerRadius * Math.PI / 2 + i) / (h + w);
-            const wave = Math.sin(pos * frequency * Math.PI * 2 - wavePhase) * amplitude;
-            ctx.lineTo(x + w - cornerRadius - i, y + h + wave);
-        }
+        _wavePath();
         ctx.stroke();
         ctx.globalCompositeOperation = 'source-over';
 
