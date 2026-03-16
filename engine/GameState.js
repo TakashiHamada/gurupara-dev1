@@ -18,7 +18,8 @@ export class GameState {
         this.stageIndex = 0;
         this.frameCount = 0;
         this.currentFrameIndex = 0;
-        this.animImages = []; // Array of Image objects
+        this.currentAnimationName = null;
+        this.animImages = [];
 
         // Timing
         this.startTime = 0;
@@ -35,6 +36,18 @@ export class GameState {
         this.resultCorrect = false;
         this.isPaused = false;
         this.grabbedFrame = -1;
+        this.isNewHiScore = false;
+
+        // NG level
+        this.ngLevel = "normal";
+
+        // Answer animation (character reaction)
+        this.ngAnimFrame = 0;
+        this.ngAnimTimer = 0;
+        this.ngAnimPhase = "done"; // "forward" / "hold" / "reverse" / "done"
+        this.goodAnimFrame = 0;
+        this.goodAnimTimer = 0;
+        this.goodAnimPhase = "done"; // "forward" / "hold" / "reverse" / "done"
 
         // Animation progress
         this.grabAnimProgress = 0;
@@ -45,10 +58,19 @@ export class GameState {
         this.clearAnimFrame = 0;
         this.clearAnimLoopCount = 0;
         this.isPlayingClearAnim = false;
+        this.showCheckBlackFrame = false;
 
-        // Slide animation
+        // Celebration (confetti)
+        this.isCelebrating = false;
+        this.celebrationTimer = 0;
+        this.celebrationParticles = [];
+        this.celebrationTitleShown = false;
+
+        // Slide animation (production supports multiple simultaneous slides)
+        this.slideOutAnimations = [];
+        this.slideInAnimations = [];
         this.isSliding = false;
-        this.slideDirection = 0; // 1=forward, -1=backward
+        this.slideDirection = 0;
         this.slideProgress = 0;
         this.slideDuration = 0;
 
@@ -61,23 +83,31 @@ export class GameState {
         this.crankHistoryIndex = 0;
         this.crankHistorySum = 0;
         this.smoothedDelta = 0;
+        this.lastCrankDelta = 0;
 
         // UI state
         this.idleTimer = 0;
         this.showHint = false;
         this.wavePhase = 0;
+        this.resultAnimTime = 0;
 
         // Persistence
         this.hiScores = {};
         this.lastSelectedStage = 0;
         this.currentSensitivity = Config.DEFAULT_SENSITIVITY;
+        this.currentHiScore = null;
+        this.shownFirstGameHint = false;
 
         // Selection screen
         this.selectedIndex = 0;
         this.selectionCrankAccum = 0;
+        this.selectionAnimFrame = 0;
 
         // Frame counter
         this.frameCounter = 0;
+
+        // Prompt animation
+        this.promptAnimTime = 0;
 
         this.loadSettings();
     }
@@ -95,6 +125,7 @@ export class GameState {
                 this.hiScores = parsed.hiScores || {};
                 this.lastSelectedStage = parsed.lastSelectedStage || 0;
                 this.currentSensitivity = parsed.sensitivity || Config.DEFAULT_SENSITIVITY;
+                this.shownFirstGameHint = parsed.shownFirstGameHint || false;
             }
         } catch (e) {
             // No save data
@@ -107,6 +138,7 @@ export class GameState {
                 hiScores: this.hiScores,
                 lastSelectedStage: this.lastSelectedStage,
                 sensitivity: this.currentSensitivity,
+                shownFirstGameHint: this.shownFirstGameHint,
             };
             localStorage.setItem('gurupara_save', JSON.stringify(data));
         } catch (e) {
@@ -121,9 +153,13 @@ export class GameState {
         this.stageIndex = stageIndex;
         this.frameCount = stageInfo.frameCount;
         this.currentFrameIndex = 0;
+        this.currentAnimationName = stageInfo.name;
 
         this.puzzle.init(this.frameCount);
         this.puzzle.shuffle();
+
+        // Current hi score
+        this.currentHiScore = this.getHiScore(stageIndex);
 
         // Reset states
         this.isGrabbing = false;
@@ -134,17 +170,38 @@ export class GameState {
         this.resultCorrect = false;
         this.isPaused = false;
         this.grabbedFrame = -1;
+        this.isNewHiScore = false;
+        this.ngLevel = "normal";
+        this.ngAnimFrame = 0;
+        this.ngAnimTimer = 0;
+        this.ngAnimPhase = "done";
+        this.goodAnimFrame = 0;
+        this.goodAnimTimer = 0;
+        this.goodAnimPhase = "done";
         this.grabAnimProgress = 0;
         this.placeAnimProgress = 0;
-        this.isSliding = false;
-        this.slideProgress = 0;
+        this.showCheckBlackFrame = false;
+
+        // Clear animation
         this.isPlayingClearAnim = false;
         this.clearAnimFrame = 0;
         this.clearAnimLoopCount = 0;
 
+        // Celebration
+        this.isCelebrating = false;
+        this.celebrationTimer = 0;
+        this.celebrationParticles = [];
+        this.celebrationTitleShown = false;
+
+        // Slide
+        this.isSliding = false;
+        this.slideProgress = 0;
+        this.slideOutAnimations = [];
+        this.slideInAnimations = [];
+
         // Crank reset
         this.accumulatedAngle = 0;
-        this.crankDeltaHistory.fill(0);
+        this.crankDeltaHistory = new Array(Config.CRANK_HISTORY_SIZE).fill(0);
         this.crankHistoryIndex = 0;
         this.crankHistorySum = 0;
         this.smoothedDelta = 0;
@@ -155,6 +212,8 @@ export class GameState {
         this.idleTimer = 0;
         this.showHint = false;
         this.wavePhase = 0;
+        this.resultAnimTime = 0;
+        this.promptAnimTime = 0;
 
         // Timer
         this.startTime = performance.now();
@@ -178,6 +237,7 @@ export class GameState {
         const existing = this.hiScores[key];
         if (existing === undefined || time < existing) {
             this.hiScores[key] = time;
+            this.currentHiScore = time;
             this.saveSettings();
             return true; // New best
         }
@@ -195,8 +255,7 @@ export class GameState {
         const totalSec = Math.floor(ms / 1000);
         const min = Math.floor(totalSec / 60);
         const sec = totalSec % 60;
-        const frac = Math.floor((ms % 1000) / 10);
-        return `${min}:${String(sec).padStart(2, '0')}.${String(frac).padStart(2, '0')}`;
+        return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
     }
 
     togglePause() {

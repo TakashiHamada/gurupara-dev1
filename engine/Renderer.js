@@ -26,42 +26,101 @@ export class Renderer {
         this.ctx.globalAlpha = 1;
     }
 
-    // --- Title Screen ---
-    drawTitleScreen(animTime) {
+    // --- Title Screen (production style with animation + scrolling dot background) ---
+    drawTitleScreen(titleState, titleImages) {
         const ctx = this.ctx;
         const W = Config.SCREEN_WIDTH;
+        const H = Config.SCREEN_HEIGHT;
 
         this.clear('#fff');
 
-        // Top black band
+        // Scrolling dot pattern background (with intro animation)
+        const spacing = Config.TITLE_BG_DOT_SPACING;
+        const maxRadius = Config.TITLE_BG_DOT_RADIUS;
+        const introProgress = Math.min(titleState.bgIntroFrame / Config.TITLE_BG_DOT_INTRO_FRAMES, 1);
+        const radius = Math.round(maxRadius * introProgress);
+
+        if (radius > 0) {
+            ctx.fillStyle = '#000';
+            ctx.globalAlpha = 0.25; // Approximate Bayer 0.75 dither
+            const startX = Math.floor(titleState.bgScrollX / 2) * 2 - spacing;
+            const startY = Math.floor(titleState.bgScrollY / 2) * 2 - spacing;
+            for (let x = startX; x <= W + spacing; x += spacing) {
+                for (let y = startY; y <= H + spacing; y += spacing) {
+                    ctx.beginPath();
+                    ctx.arc(x + spacing / 2, y + spacing / 2, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // Title animation frame (400x240 with transparency)
+        if (titleImages && titleImages.length > 0) {
+            const img = titleImages[titleState.animFrame];
+            if (img && img.complete && img.naturalWidth > 0) {
+                ctx.drawImage(img, 0, 0);
+            }
+        }
+
+        // Menu item text (centered at TITLE_MENU_Y)
+        const MENU_ITEMS = ['START GAME', 'SETTINGS', 'CREDITS'];
+        const menuText = MENU_ITEMS[titleState.selectedMenuIndex];
+        ctx.save();
+        ctx.textBaseline = 'top';
         ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, W, 150);
+        ctx.font = 'bold 20px monospace';
+        const menuWidth = ctx.measureText(menuText).width;
+        const menuX = (W - menuWidth) / 2;
+        const menuY = Config.TITLE_MENU_Y;
+        const menuHeight = 20;
+        ctx.fillText(menuText, menuX, menuY);
 
-        // Bottom dark gray band
-        this.fillRectDither(0, 201, W, 39, 0.25);
+        // 3D rotating arrows flanking menu text
+        const triSize = Config.TITLE_MENU_ARROW_SIZE;
+        const triGap = Config.TITLE_MENU_ARROW_GAP;
+        const triCenterY = menuY + menuHeight / 2;
+        const scale = Math.abs(Math.cos(titleState.arrowAnimTime * Config.TITLE_MENU_ARROW_SPEED));
+        const scaledHeight = triSize * scale;
 
-        // "GURUPARA" white text
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 28px monospace';
-        ctx.fillText('GURUPARA', 40, 80);
+        ctx.textBaseline = 'alphabetic';
 
-        // "Flipbook Puzzle"
-        ctx.font = '18px monospace';
-        ctx.fillText('Flipbook Puzzle', 61, 115);
+        // Left arrow
+        const lx = menuX - triGap - triSize;
+        if (scaledHeight > 1) {
+            ctx.beginPath();
+            ctx.moveTo(lx + triSize, triCenterY - scaledHeight);
+            ctx.lineTo(lx, triCenterY);
+            ctx.lineTo(lx + triSize, triCenterY + scaledHeight);
+            ctx.closePath();
+            ctx.fill();
+        } else {
+            ctx.fillRect(lx, triCenterY - 0.5, triSize, 1);
+        }
 
-        // Floating "PRESS [Enter] TO START"
-        const floatOffset = Math.floor(Math.sin(animTime) * 4);
-        const pressInfoY = 161 + floatOffset + 9;
-        ctx.fillStyle = '#000';
-        ctx.font = '16px monospace';
-        const text = 'PRESS [Enter] TO START';
-        const tw = ctx.measureText(text).width;
-        ctx.fillText(text, (W - tw) / 2, pressInfoY + 14);
+        // Right arrow
+        const rx = menuX + menuWidth + triGap;
+        if (scaledHeight > 1) {
+            ctx.beginPath();
+            ctx.moveTo(rx, triCenterY - scaledHeight);
+            ctx.lineTo(rx + triSize, triCenterY);
+            ctx.lineTo(rx, triCenterY + scaledHeight);
+            ctx.closePath();
+            ctx.fill();
+        } else {
+            ctx.fillRect(rx, triCenterY - 0.5, triSize, 1);
+        }
 
-        // Copyright
-        ctx.fillStyle = '#fff';
-        ctx.font = '14px monospace';
-        ctx.fillText('GIFT TEN INDUSTRY.K.K', 32, 230);
+        // "PRESS [Enter] TO SELECT" floating text
+        ctx.textBaseline = 'top';
+        const floatOffset = Math.floor(Math.sin(titleState.animTime) * Config.TITLE_PRESS_INFO_AMPLITUDE);
+        const pressY = Config.TITLE_PRESS_INFO_Y + floatOffset;
+        ctx.font = '11px monospace';
+        const pressText = 'PRESS [Enter] TO SELECT';
+        const pressWidth = ctx.measureText(pressText).width;
+        ctx.fillText(pressText, (W - pressWidth) / 2, pressY);
+
+        ctx.restore();
     }
 
     // --- Selection Screen ---
@@ -90,10 +149,13 @@ export class Renderer {
                 } else {
                     // Uncleared or unavailable
                     const stageInfo = Config.STAGES.find(s => s.index === index);
-                    const available = !!stageInfo;
 
-                    // Gray background
-                    this.fillRectDither(x, y, TILE, TILE, 0.5);
+                    // Boss stage (27) special treatment
+                    if (index === 27) {
+                        this.fillRectDither(x, y, TILE, TILE, 0.25); // Darker
+                    } else {
+                        this.fillRectDither(x, y, TILE, TILE, 0.5);
+                    }
 
                     // Letter
                     ctx.fillStyle = '#fff';
@@ -109,8 +171,10 @@ export class Renderer {
             }
         }
 
-        // Draw cursor bracket
-        this._drawCursorBracket(state.selectedIndex, START_X, START_Y, TILE, SPACING, COLS);
+        // Draw cursor bracket (animated color cycle)
+        const cursorCycle = Math.floor(state.frameCounter / 4) % 4;
+        const cursorColors = ['#000', '#555', '#999', '#555'];
+        this._drawCursorBracket(state.selectedIndex, START_X, START_Y, TILE, SPACING, COLS, cursorColors[cursorCycle]);
 
         // Pause overlay
         if (state.isPaused) {
@@ -118,7 +182,7 @@ export class Renderer {
         }
     }
 
-    _drawCursorBracket(selectedIndex, startX, startY, tileSize, spacing, cols) {
+    _drawCursorBracket(selectedIndex, startX, startY, tileSize, spacing, cols, color) {
         const ctx = this.ctx;
         const col = selectedIndex % cols;
         const row = Math.floor(selectedIndex / cols);
@@ -132,7 +196,7 @@ export class Renderer {
         const fx = tileX - (frameSize - tileSize) / 2;
         const fy = tileY - (frameSize - tileSize) / 2;
 
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = color || '#000';
 
         // Top-left
         ctx.fillRect(fx, fy, cornerLen, cornerW);
@@ -152,39 +216,52 @@ export class Renderer {
         const ctx = this.ctx;
         const W = Config.SCREEN_WIDTH;
 
+        const boxX = Config.PAUSE_BOX_X;
+        const boxY = Config.PAUSE_BOX_Y;
+        const boxW = Config.PAUSE_BOX_W;
+        const boxH = Config.PAUSE_BOX_H;
+        const border = Config.PAUSE_BOX_BORDER;
+        const shadow = Config.PAUSE_BOX_SHADOW;
+
         // Shadow
-        this.fillRectDither(47, 208, 313, 7, 0.5);
-        this.fillRectDither(360, 33, 7, 182, 0.5);
+        this.fillRectDither(boxX + shadow + 1, boxY + boxH, boxW - shadow, shadow, 0.5);
+        this.fillRectDither(boxX + boxW, boxY + shadow + 1, shadow, boxH - shadow, 0.5);
 
         // Border
         ctx.fillStyle = '#000';
-        ctx.fillRect(39, 25, 321, 6);
-        ctx.fillRect(39, 202, 321, 6);
-        ctx.fillRect(39, 31, 6, 171);
-        ctx.fillRect(354, 31, 6, 171);
+        ctx.fillRect(boxX, boxY, boxW, border);
+        ctx.fillRect(boxX, boxY + boxH - border, boxW, border);
+        ctx.fillRect(boxX, boxY + border, border, boxH - border * 2);
+        ctx.fillRect(boxX + boxW - border, boxY + border, border, boxH - border * 2);
 
         // White bg
         ctx.fillStyle = '#fff';
-        ctx.fillRect(45, 31, 309, 171);
+        ctx.fillRect(boxX + border, boxY + border, boxW - border * 2, boxH - border * 2);
 
         // Progress
         const cleared = Object.keys(state.hiScores).length;
         ctx.fillStyle = '#000';
         ctx.font = 'bold 24px monospace';
-        ctx.fillText(`${cleared}/${Config.TOTAL_STAGES}`, 113, 92);
+        const progText = `${cleared}/${Config.TOTAL_STAGES}`;
+        const progW = ctx.measureText(progText).width;
+        ctx.fillText(progText, (W - progW) / 2, 92);
 
         // Percent
         const pct = ((cleared / Config.TOTAL_STAGES) * 100).toFixed(1);
         ctx.font = '16px monospace';
-        ctx.fillText(`${pct}%`, 168, 138);
+        const pctText = `${pct}%`;
+        const pctW = ctx.measureText(pctText).width;
+        ctx.fillText(pctText, (W - pctW) / 2, 138);
 
         // Close hint
         ctx.font = '14px monospace';
-        ctx.fillText('[Esc] to Close', 80, 188);
+        const hintText = '[Esc] to Close';
+        const hintW = ctx.measureText(hintText).width;
+        ctx.fillText(hintText, (W - hintW) / 2, 188);
     }
 
     // --- Main Game Scene ---
-    drawGameScene(state, assets) {
+    drawGameScene(state, assets, tutorial) {
         const ctx = this.ctx;
         this.clear('#fff');
 
@@ -196,14 +273,13 @@ export class Renderer {
         const imgX = (Config.SCREEN_WIDTH - displaySize) / 2;
         const imgY = (Config.SCREEN_HEIGHT - displaySize) / 2;
 
-        // Slide animations (simplified)
+        // Slide animations
         if (state.isSliding) {
             this._drawSlideAnimation(state, frames, imgX, imgY, displaySize);
         } else if (state.isChecking) {
             // Check animation
             const frameIdx = state.checkAnimFrame % state.frameCount;
             if (state.checkAnimFrame % 2 === 1) {
-                // Black flash
                 ctx.fillStyle = '#000';
                 ctx.fillRect(imgX, imgY, displaySize, displaySize);
             } else {
@@ -213,14 +289,19 @@ export class Renderer {
                 }
             }
         } else if (state.isPlayingClearAnim) {
-            // Clear animation
             const frameIdx = state.clearAnimFrame % state.frameCount;
             const img = frames[frameIdx];
             if (img && img.complete) {
                 ctx.drawImage(img, imgX, imgY, displaySize, displaySize);
             }
+        } else if (state.isCelebrating) {
+            // During celebration, show the current (correct) frame
+            const imageIndex = state.puzzle.getFrameAt(state.currentFrameIndex);
+            if (imageIndex !== undefined && frames[imageIndex] && frames[imageIndex].complete) {
+                ctx.drawImage(frames[imageIndex], imgX, imgY, displaySize, displaySize);
+            }
         } else {
-            // Normal: draw current frame (from puzzle order)
+            // Normal: draw current frame
             if (!state.showResult || state.resultCorrect) {
                 const imageIndex = state.puzzle.getFrameAt(state.currentFrameIndex);
                 if (imageIndex !== undefined && frames[imageIndex] && frames[imageIndex].complete) {
@@ -229,24 +310,31 @@ export class Renderer {
             }
         }
 
-        // Grabbed thumbnail (always on top)
+        // Grabbed thumbnail
         if (state.isGrabbing && state.grabbedFrame >= 0) {
             this._drawGrabbedThumbnail(state, frames, imgX, imgY, displaySize);
         }
 
-        // Placing animation (always on top)
+        // Placing animation
         if (state.isPlacing && state.placingFrame >= 0) {
             this._drawPlacingThumbnail(state, frames, imgX, imgY, displaySize);
         }
 
-        // Rewind icon
-        if (state.lastCrankDelta < -Config.CRANK_THRESHOLD) {
+        // Rewind icon (top-left, production style)
+        if (state.lastCrankDelta < -Config.CRANK_THRESHOLD && !state.isGrabbing && !state.isPlacing &&
+            !state.isChecking && !state.showResult && !state.isPaused && !state.isCelebrating) {
             this._drawRewindIcon();
         }
 
         // Hint
-        if (state.showHint && !state.isGrabbing && !state.isPlacing && !state.isPaused && !state.showResult) {
+        if (state.showHint && !state.isGrabbing && !state.isPlacing && !state.isPaused &&
+            !state.showResult && !state.isCelebrating) {
             this._drawHint(state);
+        }
+
+        // Celebration overlay
+        if (state.isCelebrating) {
+            this._drawCelebration(state);
         }
 
         // Pause overlay
@@ -259,7 +347,30 @@ export class Renderer {
             if (state.resultCorrect) {
                 this._drawResultOK(state);
             } else {
-                this._drawResultNG();
+                this._drawResultNG(state);
+            }
+        }
+
+        // Answer animation (character reaction) - game result
+        if (state.goodAnimPhase !== "done") {
+            this._drawAnswerAnim(assets.answerAnimImages.good, state.goodAnimFrame,
+                Config.GOOD_ANIM_X, Config.GOOD_ANIM_Y);
+        }
+        if (state.ngAnimPhase !== "done") {
+            const ngKey = state.ngLevel === "close" ? "near" : state.ngLevel === "far" ? "sobad" : "bad";
+            const ngImgs = assets.answerAnimImages[ngKey];
+            const ngX = (Config.SCREEN_WIDTH - 120) / 2;
+            const ngY = Config.SCREEN_HEIGHT - 120;
+            this._drawAnswerAnim(ngImgs, state.ngAnimFrame, ngX, ngY);
+        }
+
+        // Tutorial overlay
+        if (tutorial) {
+            this._drawTutorialOverlay(tutorial, state);
+            // Tutorial good animation (during stop overlays)
+            if (tutorial.goodAnimPhase && tutorial.goodAnimPhase !== "hidden") {
+                this._drawAnswerAnim(assets.answerAnimImages.good, tutorial.goodAnimFrame,
+                    Config.GOOD_ANIM_X, Config.TUTORIAL_GOOD_ANIM_Y);
             }
         }
     }
@@ -269,35 +380,80 @@ export class Renderer {
         const W = Config.SCREEN_WIDTH;
         const H = Config.SCREEN_HEIGHT;
 
-        const t = easeOutSine(state.slideProgress);
+        const t = state.slideDirection > 0 ? easeOutSine(state.slideProgress) : easeOutQuad(state.slideProgress);
 
         if (state.slideDirection > 0) {
             // Slide out (forward) - old page slides left
             const slideX = -W * t;
+            const slideRight = slideX + W;
 
-            // Draw old frame sliding
-            ctx.save();
-            ctx.beginPath();
-            ctx.rect(Math.max(0, slideX), 0, W, H);
-            ctx.clip();
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(slideX, 0, W, H);
-            if (state.slidePrevImage !== undefined && frames[state.slidePrevImage] && frames[state.slidePrevImage].complete) {
-                ctx.drawImage(frames[state.slidePrevImage], slideX + imgX, imgY, displaySize, displaySize);
-            }
-            // Edge shadow
-            ctx.fillStyle = '#000';
-            ctx.fillRect(slideX + W - 3, 0, 3, H);
-            ctx.restore();
+            // Position ratio (0 at right edge, 1 at left)
+            const positionRatio = 1 - slideRight / W;
+            const edgeWidth = Config.SLIDE_EDGE_MIN + (Config.SLIDE_EDGE_MAX - Config.SLIDE_EDGE_MIN) * positionRatio;
+            const shadowWidth = Config.SLIDE_SHADOW_MIN + (Config.SLIDE_SHADOW_MAX - Config.SLIDE_SHADOW_MIN) * positionRatio;
+            const shadowAlpha = Config.SLIDE_OUT_SHADOW_ALPHA + (1.0 - Config.SLIDE_OUT_SHADOW_ALPHA) * positionRatio;
+            const scaleY = Config.SLIDE_SCALE_Y_MIN + (Config.SLIDE_SCALE_Y_MAX - Config.SLIDE_SCALE_Y_MIN) * positionRatio;
+            const currentHeight = H * scaleY;
+            const slideY = H / 2 - currentHeight / 2;
 
-            // Draw new frame
+            // Draw new frame behind
             const newImgIdx = state.puzzle.getFrameAt(state.currentFrameIndex);
             if (newImgIdx !== undefined && frames[newImgIdx] && frames[newImgIdx].complete) {
                 ctx.drawImage(frames[newImgIdx], imgX, imgY, displaySize, displaySize);
             }
+
+            // Shadow
+            if (slideRight < W && shadowWidth > 0) {
+                this.fillRectDither(slideRight, slideY, shadowWidth, currentHeight, shadowAlpha);
+            }
+
+            // Old frame sliding with clip
+            const clipLeft = Math.max(0, slideX);
+            const clipWidth = slideRight - clipLeft;
+            if (clipWidth > 0) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(clipLeft, 0, clipWidth, H);
+                ctx.clip();
+
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(slideX, slideY, W, currentHeight);
+
+                // Edge with curve
+                ctx.fillStyle = '#000';
+                const segments = 24;
+                const segmentHeight = currentHeight / segments;
+                const edgeCenterY = slideY + currentHeight / 2;
+
+                for (let j = 0; j < segments; j++) {
+                    const segY = slideY + j * segmentHeight;
+                    const segCenterY = segY + segmentHeight / 2;
+                    const normalizedDist = Math.abs(segCenterY - edgeCenterY) / (currentHeight / 2);
+                    const curveOffset = Config.SLIDE_EDGE_CURVE * normalizedDist * normalizedDist;
+                    const segEdgeWidth = edgeWidth + curveOffset;
+                    ctx.fillRect(slideX + W - segEdgeWidth, segY, segEdgeWidth, segmentHeight + 1);
+                }
+
+                // Image on sliding page
+                if (state.slidePrevImage !== undefined && frames[state.slidePrevImage] && frames[state.slidePrevImage].complete) {
+                    const imgScaledH = displaySize * scaleY;
+                    const imgDrawY = slideY + (currentHeight - imgScaledH) / 2;
+                    ctx.drawImage(frames[state.slidePrevImage], slideX + imgX, imgDrawY, displaySize, imgScaledH);
+                }
+
+                ctx.restore();
+            }
         } else {
-            // Slide in (backward) - page slides in from left
+            // Slide in (backward)
             const slideX = -W + W * t;
+            const slideRight = slideX + W;
+
+            const positionRatio = 1 - slideRight / W;
+            const edgeWidth = Config.SLIDE_EDGE_MIN + (Config.SLIDE_EDGE_MAX - Config.SLIDE_EDGE_MIN) * positionRatio;
+            const shadowAlpha = Config.SLIDE_IN_SHADOW_ALPHA_END + (Config.SLIDE_IN_SHADOW_ALPHA_START - Config.SLIDE_IN_SHADOW_ALPHA_END) * positionRatio;
+            const scaleY = Config.SLIDE_SCALE_Y_MIN + (Config.SLIDE_SCALE_Y_MAX - Config.SLIDE_SCALE_Y_MIN) * positionRatio;
+            const currentHeight = H * scaleY;
+            const slideY = H / 2 - currentHeight / 2;
 
             // Draw current frame behind
             const curImgIdx = state.puzzle.getFrameAt(state.currentFrameIndex);
@@ -305,19 +461,47 @@ export class Renderer {
                 ctx.drawImage(frames[curImgIdx], imgX, imgY, displaySize, displaySize);
             }
 
-            // Draw old frame sliding in
-            ctx.save();
-            ctx.beginPath();
-            ctx.rect(Math.max(0, slideX), 0, W + slideX > W ? W : slideX + W, H);
-            ctx.clip();
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(slideX, 0, W, H);
-            if (state.slidePrevImage !== undefined && frames[state.slidePrevImage] && frames[state.slidePrevImage].complete) {
-                ctx.drawImage(frames[state.slidePrevImage], slideX + imgX, imgY, displaySize, displaySize);
+            // Shadow
+            if (slideRight < W) {
+                const sw = W - slideRight;
+                this.fillRectDither(slideRight, slideY, sw, currentHeight, shadowAlpha);
             }
-            ctx.fillStyle = '#000';
-            ctx.fillRect(slideX + W - 3, 0, 3, H);
-            ctx.restore();
+
+            // Old frame sliding in
+            const clipLeft = Math.max(0, slideX);
+            const clipWidth = slideRight - clipLeft;
+            if (clipWidth > 0) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(clipLeft, 0, clipWidth, H);
+                ctx.clip();
+
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(slideX, slideY, W, currentHeight);
+
+                // Edge with curve
+                ctx.fillStyle = '#000';
+                const segments = 24;
+                const segmentHeight = currentHeight / segments;
+                const edgeCenterY = slideY + currentHeight / 2;
+
+                for (let j = 0; j < segments; j++) {
+                    const segY = slideY + j * segmentHeight;
+                    const segCenterY = segY + segmentHeight / 2;
+                    const normalizedDist = Math.abs(segCenterY - edgeCenterY) / (currentHeight / 2);
+                    const curveOffset = Config.SLIDE_EDGE_CURVE * normalizedDist * normalizedDist;
+                    const segEdgeWidth = edgeWidth + curveOffset;
+                    ctx.fillRect(slideX + W - segEdgeWidth, segY, segEdgeWidth, segmentHeight + 1);
+                }
+
+                if (state.slidePrevImage !== undefined && frames[state.slidePrevImage] && frames[state.slidePrevImage].complete) {
+                    const imgScaledH = displaySize * scaleY;
+                    const imgDrawY = slideY + (currentHeight - imgScaledH) / 2;
+                    ctx.drawImage(frames[state.slidePrevImage], slideX + imgX, imgDrawY, displaySize, imgScaledH);
+                }
+
+                ctx.restore();
+            }
         }
     }
 
@@ -329,27 +513,49 @@ export class Renderer {
         const img = frames[state.grabbedFrame];
         if (!img || !img.complete) return;
 
+        const THUMBNAIL_SCALE = Config.IMAGE_SIZE / W; // ~0.3
+
         const t = easeOutQuad(state.grabAnimProgress);
-        const thumbScale = 1.0 + (0.5 - 1.0) * t;
-        const cw = W * thumbScale;
-        const ch = H * thumbScale;
-        // Animate from current position (0,0) to top-left corner (0,0)
-        const thumbX = 0;
-        const thumbY = 0;
+        const currentX = Config.THUMBNAIL_X * t;
+        const currentY = Config.THUMBNAIL_Y * t;
+        const currentScale = 1.0 + (THUMBNAIL_SCALE - 1.0) * t;
+        const cw = W * currentScale;
+        const ch = H * currentScale;
 
         // White card
         ctx.fillStyle = '#fff';
-        ctx.fillRect(thumbX, thumbY, cw, ch);
+        ctx.fillRect(currentX, currentY, cw, ch);
 
         // Image on card
         const imageScale = Config.MAIN_DISPLAY_SCALE + (Config.THUMBNAIL_DISPLAY_SCALE - Config.MAIN_DISPLAY_SCALE) * t;
         const ds = Config.IMAGE_SIZE * imageScale;
-        const ix = thumbX + (cw - ds) / 2;
-        const iy = thumbY + (ch - ds) / 2;
+        const ix = currentX + (cw - ds) / 2;
+        const iy = currentY + (ch - ds) / 2;
         ctx.drawImage(img, ix, iy, ds, ds);
 
-        // Wavy border (right + bottom edges)
-        this._drawWavyBorder(thumbX, thumbY, cw, ch, t, state.wavePhase);
+        // Border
+        const border = Config.THUMBNAIL_BORDER;
+        const borderOffset = Config.THUMBNAIL_BORDER_OFFSET;
+        const startScale = Config.THUMBNAIL_BORDER_SCALE_START;
+        const borderScale = startScale - (startScale - 1.0) * t;
+
+        const rightEdgeX = currentX + cw - border + borderOffset * currentScale;
+        const bottomEdgeY = currentY + ch - border + borderOffset * currentScale;
+
+        // White outline
+        this._drawWavyBorder(
+            rightEdgeX, currentY, border, ch + borderOffset * currentScale,
+            currentX, bottomEdgeY, cw + borderOffset * currentScale, border,
+            currentScale, 1.0, borderScale, '#fff', Config.THUMBNAIL_BORDER_OUTLINE * borderScale,
+            state.wavePhase
+        );
+        // Black border
+        this._drawWavyBorder(
+            rightEdgeX, currentY, border, ch + borderOffset * currentScale,
+            currentX, bottomEdgeY, cw + borderOffset * currentScale, border,
+            currentScale, t, borderScale, '#000', 0,
+            state.wavePhase
+        );
     }
 
     _drawPlacingThumbnail(state, frames, imgX, imgY, displaySize) {
@@ -360,108 +566,151 @@ export class Renderer {
         const img = frames[state.placingFrame];
         if (!img || !img.complete) return;
 
+        const THUMBNAIL_SCALE = Config.IMAGE_SIZE / W;
+
         const t = easeOutQuad(state.placeAnimProgress);
-        const thumbX = 0;
-        const thumbY = 0;
-        const thumbScale = 0.5 + (1.0 - 0.5) * t;
-        const cw = W * thumbScale;
-        const ch = H * thumbScale;
+        const currentX = Config.THUMBNAIL_X + (0 - Config.THUMBNAIL_X) * t;
+        const currentY = Config.THUMBNAIL_Y + (0 - Config.THUMBNAIL_Y) * t;
+        const currentScale = THUMBNAIL_SCALE + (1.0 - THUMBNAIL_SCALE) * t;
+        const cw = W * currentScale;
+        const ch = H * currentScale;
 
         ctx.fillStyle = '#fff';
-        ctx.fillRect(thumbX, thumbY, cw, ch);
+        ctx.fillRect(currentX, currentY, cw, ch);
 
         const imageScale = Config.THUMBNAIL_DISPLAY_SCALE + (Config.MAIN_DISPLAY_SCALE - Config.THUMBNAIL_DISPLAY_SCALE) * t;
         const ds = Config.IMAGE_SIZE * imageScale;
-        const ix = thumbX + (cw - ds) / 2;
-        const iy = thumbY + (ch - ds) / 2;
+        const ix = currentX + (cw - ds) / 2;
+        const iy = currentY + (ch - ds) / 2;
         ctx.drawImage(img, ix, iy, ds, ds);
 
-        this._drawWavyBorder(thumbX, thumbY, cw, ch, 1 - t, state.wavePhase);
-    }
-
-    _drawWavyBorder(x, y, w, h, opacity, wavePhase) {
-        const ctx = this.ctx;
         const border = Config.THUMBNAIL_BORDER;
-        const amplitude = Config.THUMBNAIL_WAVE_AMPLITUDE;
-        const frequency = Config.THUMBNAIL_WAVE_FREQUENCY;
+        const borderOffset = Config.THUMBNAIL_BORDER_OFFSET;
+        const startScale = Config.THUMBNAIL_BORDER_SCALE_START;
+        const borderScale = 1.0 + (startScale - 1.0) * t;
 
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = border;
-        ctx.globalAlpha = opacity;
-
-        // Right edge + Bottom edge as one continuous path
-        // Near the corner, dampen amplitude and blend wave direction
-        const rightX = x + w;
-        const totalLen = h + w;
-        const cornerFade = 30; // pixels over which to fade near corner
-
-        const _wavePath = () => {
-            // Right edge (top to bottom)
-            for (let i = 0; i <= h; i += 2) {
-                const pos = i / totalLen;
-                const distToCorner = h - i;
-                const fade = distToCorner < cornerFade ? distToCorner / cornerFade : 1;
-                const wave = Math.sin(pos * frequency * Math.PI * 2 - wavePhase) * amplitude * fade;
-                if (i === 0) ctx.moveTo(rightX + wave, y + i);
-                else ctx.lineTo(rightX + wave, y + i);
-            }
-            // Bottom edge (right to left, continuing from right edge)
-            for (let i = 0; i <= w; i += 2) {
-                const pos = (h + i) / totalLen;
-                const fade = i < cornerFade ? i / cornerFade : 1;
-                const wave = Math.sin(pos * frequency * Math.PI * 2 - wavePhase) * amplitude * fade;
-                ctx.lineTo(x + w - i, y + h + wave);
-            }
-        };
-
-        ctx.beginPath();
-        _wavePath();
-        ctx.stroke();
+        const rightEdgeX = currentX + cw - border + borderOffset * currentScale;
+        const bottomEdgeY = currentY + ch - border + borderOffset * currentScale;
 
         // White outline
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = border + Config.THUMBNAIL_BORDER_OUTLINE * 2;
-        ctx.globalCompositeOperation = 'destination-over';
-        ctx.beginPath();
-        _wavePath();
-        ctx.stroke();
-        ctx.globalCompositeOperation = 'source-over';
+        this._drawWavyBorder(
+            rightEdgeX, currentY, border, ch + borderOffset * currentScale,
+            currentX, bottomEdgeY, cw + borderOffset * currentScale, border,
+            currentScale, 1.0, borderScale, '#fff', Config.THUMBNAIL_BORDER_OUTLINE * borderScale,
+            state.wavePhase
+        );
+        // Black border (fading out)
+        this._drawWavyBorder(
+            rightEdgeX, currentY, border, ch + borderOffset * currentScale,
+            currentX, bottomEdgeY, cw + borderOffset * currentScale, border,
+            currentScale, 1.0 - t, borderScale, '#000', 0,
+            state.wavePhase
+        );
+    }
+
+    _drawWavyBorder(rightX, rightY, rightWidth, rightHeight,
+                     bottomX, bottomY, bottomWidth, bottomHeight,
+                     scale, opacity, borderScale, color, positionOffset, wavePhase) {
+        const ctx = this.ctx;
+        borderScale = borderScale || 1.0;
+        positionOffset = positionOffset || 0;
+        const amplitude = Config.THUMBNAIL_WAVE_AMPLITUDE * scale;
+        const frequency = Config.THUMBNAIL_WAVE_FREQUENCY;
+        const cornerRadius = Config.THUMBNAIL_CORNER_RADIUS * scale;
+        const step = 2;
+
+        // Apply border scale
+        const origRightWidth = rightWidth;
+        const origBottomHeight = bottomHeight;
+        rightWidth = rightWidth * borderScale;
+        bottomHeight = bottomHeight * borderScale;
+
+        // Center-based scaling
+        rightX = rightX - (rightWidth - origRightWidth) / 2 + positionOffset;
+        bottomY = bottomY - (bottomHeight - origBottomHeight) / 2 + positionOffset;
+
+        // Total lengths
+        const rightEdgeLength = rightHeight - cornerRadius;
+        const bottomEdgeLength = bottomWidth - cornerRadius;
+        const totalLength = rightEdgeLength + cornerRadius * Math.PI / 2 + bottomEdgeLength;
+        const arcLength = cornerRadius * Math.PI / 2;
+
+        ctx.fillStyle = color;
+        ctx.globalAlpha = opacity;
+
+        // Right edge
+        for (let i = 0; i < rightEdgeLength; i += step) {
+            const pos = i / totalLength;
+            const waveOffset = Math.sin(pos * frequency * Math.PI * 2 - wavePhase) * amplitude;
+            const rectH = Math.min(step, rightEdgeLength - i);
+            ctx.fillRect(rightX + waveOffset, rightY + i, rightWidth, rectH);
+        }
+
+        // Corner arc
+        const arcCenterX = rightX - cornerRadius + rightWidth / 2;
+        const arcCenterY = rightY + rightHeight - cornerRadius - rightWidth / 2;
+        const arcSteps = Math.max(8, Math.floor(arcLength / step));
+
+        for (let i = 0; i <= arcSteps; i++) {
+            const arcProgress = i / arcSteps;
+            const angle = arcProgress * Math.PI / 2;
+            const pos = (rightEdgeLength + arcProgress * arcLength) / totalLength;
+            const waveOffset = Math.sin(pos * frequency * Math.PI * 2 + wavePhase) * amplitude;
+            const radius = cornerRadius + waveOffset;
+            const x = arcCenterX + Math.sin(angle) * radius;
+            const y = arcCenterY + Math.cos(angle) * radius;
+            const d = rightWidth;
+            this._roundRect(x - d / 2, y - d / 2, d, d, d / 2);
+            ctx.fill();
+        }
+
+        // Bottom edge
+        for (let i = 0; i < bottomEdgeLength; i += step) {
+            const pos = (rightEdgeLength + arcLength + i) / totalLength;
+            const waveOffset = Math.sin(pos * frequency * Math.PI * 2 - wavePhase) * amplitude;
+            const rectW = Math.min(step, bottomEdgeLength - i);
+            ctx.fillRect(bottomX + bottomWidth - cornerRadius - i - rectW, bottomY + waveOffset, rectW, bottomHeight);
+        }
 
         ctx.globalAlpha = 1;
     }
 
     _drawRewindIcon() {
         const ctx = this.ctx;
-        const W = Config.SCREEN_WIDTH;
-        const H = Config.SCREEN_HEIGHT;
-        const size = 30;
-        const bgW = size + 20;
-        const bgH = size + 16;
-        const bgX = (W - bgW) / 2;
-        const bgY = (H - bgH) / 2;
+        const iconSize = Config.REWIND_ICON_SIZE;
+        const padTop = Config.REWIND_ICON_PADDING_TOP;
+        const padBottom = Config.REWIND_ICON_PADDING_BOTTOM;
+        const padLeft = Config.REWIND_ICON_PADDING_LEFT;
+        const padRight = Config.REWIND_ICON_PADDING_RIGHT;
+        const cornerRadius = 12;
+
+        const bgWidth = iconSize + padLeft + padRight;
+        const bgHeight = iconSize + padTop + padBottom;
+        const margin = Config.REWIND_ICON_MARGIN;
+        const bgX = margin;
+        const bgY = margin;
 
         ctx.fillStyle = '#000';
-        this._roundRect(bgX, bgY, bgW, bgH, 12);
+        this._roundRect(bgX, bgY, bgWidth, bgHeight, cornerRadius);
         ctx.fill();
 
-        // Two triangles pointing left
-        const iconX = bgX + 10;
-        const iconY = bgY + 8;
-        const triW = size / 2;
-        const triH = size;
+        const iconX = bgX + padLeft;
+        const iconY = bgY + padTop;
+        const triWidth = iconSize / 2;
+        const triHeight = iconSize;
 
         ctx.fillStyle = '#fff';
         ctx.beginPath();
-        ctx.moveTo(iconX + triW * 2, iconY);
-        ctx.lineTo(iconX + triW * 2, iconY + triH);
-        ctx.lineTo(iconX + triW, iconY + triH / 2);
+        ctx.moveTo(iconX + triWidth * 2, iconY);
+        ctx.lineTo(iconX + triWidth * 2, iconY + triHeight);
+        ctx.lineTo(iconX + triWidth, iconY + triHeight / 2);
         ctx.closePath();
         ctx.fill();
 
         ctx.beginPath();
-        ctx.moveTo(iconX + triW, iconY);
-        ctx.lineTo(iconX + triW, iconY + triH);
-        ctx.lineTo(iconX, iconY + triH / 2);
+        ctx.moveTo(iconX + triWidth, iconY);
+        ctx.lineTo(iconX + triWidth, iconY + triHeight);
+        ctx.lineTo(iconX, iconY + triHeight / 2);
         ctx.closePath();
         ctx.fill();
     }
@@ -469,116 +718,286 @@ export class Renderer {
     _drawHint(state) {
         const ctx = this.ctx;
         ctx.fillStyle = '#000';
-        ctx.globalAlpha = 0.44;
         ctx.font = '12px monospace';
 
-        if (!state.isGrabbing && state.puzzle.getCurrentCount() === state.frameCount) {
-            // Grab hint
-            ctx.fillText('[Space] Grab  [Enter] Check', 70, 230);
+        // Line 1: grab hint
+        ctx.fillText('[Space] grab', Config.HINT_LINE1_X, Config.HINT_LINE1_Y);
+        // Line 2: check hint
+        ctx.fillText('[Enter] check', Config.HINT_LINE2_X, Config.HINT_LINE2_Y);
+    }
+
+    // --- Celebration (confetti + title) ---
+    _drawCelebration(state) {
+        const ctx = this.ctx;
+        const particles = state.celebrationParticles;
+        const outline = Config.CELEBRATION_PARTICLE_OUTLINE;
+
+        // White outlines
+        ctx.fillStyle = '#fff';
+        for (const p of particles) {
+            if (p.x > -10 && p.x < 410 && p.y > -10 && p.y < 250) {
+                ctx.fillRect(p.x - outline, p.y - outline, p.w + outline * 2, p.h + outline * 2);
+            }
         }
 
-        ctx.globalAlpha = 1;
+        // Black fills
+        ctx.fillStyle = '#000';
+        for (const p of particles) {
+            if (p.x > -10 && p.x < 410 && p.y > -10 && p.y < 250) {
+                ctx.fillRect(p.x, p.y, p.w, p.h);
+            }
+        }
+
+        // Title
+        if (state.celebrationTitleShown && state.currentAnimationName) {
+            const name = state.currentAnimationName;
+            ctx.font = 'bold 24px monospace';
+            const textW = ctx.measureText(name).width;
+            const padX = Config.CELEBRATION_TITLE_PAD_X;
+            const padY = Config.CELEBRATION_TITLE_PAD_Y;
+            const bgW = textW + padX * 2;
+            const bgH = 30 + padY * 2;
+            const bgX = (Config.SCREEN_WIDTH - bgW) / 2;
+            const bgY = Config.SCREEN_HEIGHT - bgH + Config.PAUSE_LABEL_OFFSET_Y;
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect(bgX, bgY, bgW, bgH);
+            ctx.fillStyle = '#fff';
+            ctx.fillText(name, bgX + padX, bgY + padY + 22);
+        }
     }
 
     _drawResultOK(state) {
         const ctx = this.ctx;
+        const W = Config.SCREEN_WIDTH;
+        const H = Config.SCREEN_HEIGHT;
+
+        const boxX = Config.PAUSE_BOX_X;
+        const boxY = Config.PAUSE_BOX_Y;
+        const boxW = Config.PAUSE_BOX_W;
+        const boxH = Config.PAUSE_BOX_H;
+        const border = Config.PAUSE_BOX_BORDER;
+        const shadow = Config.PAUSE_BOX_SHADOW;
 
         // Shadow
-        this.fillRectDither(47, 219, 313, 8, 0.5);
-        this.fillRectDither(360, 18, 7, 209, 0.5);
+        this.fillRectDither(boxX + shadow + 1, boxY + boxH, boxW - shadow, shadow, 0.5);
+        this.fillRectDither(boxX + boxW, boxY + shadow + 1, shadow, boxH - shadow, 0.5);
 
         // Border
         ctx.fillStyle = '#000';
-        ctx.fillRect(39, 12, 321, 6);
-        ctx.fillRect(39, 214, 321, 6);
-        ctx.fillRect(39, 18, 6, 196);
-        ctx.fillRect(354, 18, 6, 196);
+        ctx.fillRect(boxX, boxY, boxW, border);
+        ctx.fillRect(boxX, boxY + boxH - border, boxW, border);
+        ctx.fillRect(boxX, boxY + border, border, boxH - border * 2);
+        ctx.fillRect(boxX + boxW - border, boxY + border, border, boxH - border * 2);
 
         // White bg
+        const innerX = boxX + border;
+        const innerY = boxY + border;
+        const innerW = boxW - border * 2;
+        const innerH = boxH - border * 2;
         ctx.fillStyle = '#fff';
-        ctx.fillRect(45, 18, 309, 196);
+        ctx.fillRect(innerX, innerY, innerW, innerH);
 
-        // "CLEAR!"
+        // Time display (large, centered, dithered style)
+        const safeTime = state.clearTime || 0;
+        const timeText = state.formatTime(safeTime);
         ctx.fillStyle = '#000';
-        ctx.font = 'bold 28px monospace';
-        ctx.fillText('CLEAR!', 91, 52);
+        ctx.globalAlpha = 0.5;
+        ctx.font = 'bold 48px monospace';
+        const timeW = ctx.measureText(timeText).width;
+        const timeX = Math.floor((W - timeW) / 2);
+        const timeY = innerY + Config.PAUSE_TIME_TOP_MARGIN + 50;
+        ctx.fillText(timeText, timeX, timeY);
+        ctx.globalAlpha = 1;
 
-        // Time
-        ctx.font = '18px monospace';
-        const timeText = `Time:${state.formatTime(state.clearTime)}`;
-        ctx.fillText(timeText, 119, 105);
-
-        // Best Time
-        if (state.isNewHiScore) {
-            ctx.fillStyle = '#000';
-            ctx.fillRect(113, 115, 174, 20);
-            ctx.fillStyle = '#fff';
-            ctx.font = '16px monospace';
-            ctx.fillText('Best Time!', 130, 130);
-        }
-
-        // Navigation hints
-        ctx.fillStyle = '#000';
+        // Best Time / New Record
         ctx.font = '14px monospace';
-        ctx.fillText('[Enter] Stage Select', 80, 165);
-        ctx.fillText('[Esc] Replay', 80, 190);
+        let bestTimeStr;
+        if (state.isNewHiScore) {
+            bestTimeStr = '- New Record! -';
+        } else {
+            const currentHiScore = state.currentHiScore;
+            if (currentHiScore) {
+                bestTimeStr = `- Best Time: ${state.formatTime(currentHiScore)} -`;
+            } else {
+                bestTimeStr = '- Best Time: --:-- -';
+            }
+        }
+        const bestW = ctx.measureText(bestTimeStr).width;
+        const bestX = (W - bestW) / 2;
+        const bestY = timeY + Config.PAUSE_BEST_TOP_GAP + 16;
+        ctx.fillText(bestTimeStr, bestX, bestY);
+
+        // Prompt (floating animation)
+        const promptAnimTime = state.promptAnimTime || 0;
+        const floatOffset = Math.floor(Math.sin(promptAnimTime) * Config.TITLE_PRESS_INFO_AMPLITUDE);
+        const promptBaseY = innerY + Config.PAUSE_PROMPT_Y;
+
+        ctx.font = '14px monospace';
+
+        const selectText = '[Enter] STAGE SELECT';
+        const selectW = ctx.measureText(selectText).width;
+        ctx.fillText(selectText, (W - selectW) / 2, promptBaseY + floatOffset);
+
+        const replayText = '[Esc] REPLAY';
+        const replayW = ctx.measureText(replayText).width;
+        ctx.fillText(replayText, (W - replayW) / 2, promptBaseY + Config.PAUSE_PROMPT_LINE_SPACING + floatOffset);
+
+        // "CLEAR!" label at bottom
+        ctx.font = 'bold 24px monospace';
+        const screenLabel = 'CLEAR!';
+        const labelW = ctx.measureText(screenLabel).width;
+        const labelPadX = Config.CELEBRATION_TITLE_PAD_X;
+        const labelPadY = Config.CELEBRATION_TITLE_PAD_Y;
+        const labelBgW = labelW + labelPadX * 2;
+        const labelBgH = 30 + labelPadY * 2;
+        const labelBgX = (W - labelBgW) / 2;
+        const labelBgY = H - labelBgH + Config.PAUSE_LABEL_OFFSET_Y;
+
+        ctx.fillStyle = '#000';
+        ctx.fillRect(labelBgX, labelBgY, labelBgW, labelBgH);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(screenLabel, labelBgX + labelPadX, labelBgY + labelPadY + 22);
     }
 
-    _drawResultNG() {
+    _drawResultNG(state) {
         const ctx = this.ctx;
+        const boxX = Config.NG_BOX_X;
+        const boxY = Config.NG_BOX_Y;
+        const shadowOff = Config.NG_BOX_SHADOW_OFFSET;
+        const boxWidth = 300;
+        const boxHeight = 100;
 
         // Shadow
-        this.fillRectDither(56, 71, 300, 100, 0.5);
+        this.fillRectDither(boxX + shadowOff, boxY + shadowOff + 1, boxWidth, boxHeight, 0.5);
 
         // Black bg
         ctx.fillStyle = '#000';
-        ctx.fillRect(44, 58, 300, 100);
+        ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-        // Text
+        // NG level messages (3 levels from production)
+        const ngLevel = state.ngLevel || "normal";
+        let line1, line2;
+        if (ngLevel === "close") {
+            line1 = "So close!";
+            line2 = "Just one move away!";
+        } else if (ngLevel === "far") {
+            line1 = "Nope! Not even";
+            line2 = "close at all!";
+        } else {
+            line1 = "Hmm, not quite...";
+            line2 = "Keep trying!";
+        }
+
+        // Text centered in box
         ctx.fillStyle = '#fff';
         ctx.font = '16px monospace';
-        ctx.fillText('Something seems', 74, 96);
-        ctx.fillText('to be wrong...', 74, 124);
+        const w1 = ctx.measureText(line1).width;
+        const w2 = ctx.measureText(line2).width;
+        const lineSpacing = 4;
+        const textH = 16 * 2 + lineSpacing;
+        const startY = boxY + Math.floor((boxHeight - textH) / 2) + 14;
+        ctx.fillText(line1, boxX + Math.floor((boxWidth - w1) / 2), startY);
+        ctx.fillText(line2, boxX + Math.floor((boxWidth - w2) / 2), startY + 16 + lineSpacing);
     }
 
     _drawPauseScreen(state) {
         const ctx = this.ctx;
+        const W = Config.SCREEN_WIDTH;
+        const H = Config.SCREEN_HEIGHT;
+
+        const boxX = Config.PAUSE_BOX_X;
+        const boxY = Config.PAUSE_BOX_Y;
+        const boxW = Config.PAUSE_BOX_W;
+        const boxH = Config.PAUSE_BOX_H;
+        const border = Config.PAUSE_BOX_BORDER;
+        const shadow = Config.PAUSE_BOX_SHADOW;
 
         // Shadow
-        this.fillRectDither(47, 208, 313, 7, 0.5);
-        this.fillRectDither(360, 33, 7, 182, 0.5);
+        this.fillRectDither(boxX + shadow + 1, boxY + boxH, boxW - shadow, shadow, 0.5);
+        this.fillRectDither(boxX + boxW, boxY + shadow + 1, shadow, boxH - shadow, 0.5);
 
         // Border
         ctx.fillStyle = '#000';
-        ctx.fillRect(39, 25, 321, 6);
-        ctx.fillRect(39, 202, 321, 6);
-        ctx.fillRect(39, 31, 6, 171);
-        ctx.fillRect(354, 31, 6, 171);
+        ctx.fillRect(boxX, boxY, boxW, border);
+        ctx.fillRect(boxX, boxY + boxH - border, boxW, border);
+        ctx.fillRect(boxX, boxY + border, border, boxH - border * 2);
+        ctx.fillRect(boxX + boxW - border, boxY + border, border, boxH - border * 2);
 
         // White bg
+        const innerX = boxX + border;
+        const innerY = boxY + border;
+        const innerW = boxW - border * 2;
+        const innerH = boxH - border * 2;
         ctx.fillStyle = '#fff';
-        ctx.fillRect(45, 51, 309, 138);
+        ctx.fillRect(innerX, innerY, innerW, innerH);
 
-        // Time
+        // Time (large, dithered)
+        const timeText = state.formatTime(state.getElapsedTime());
         ctx.fillStyle = '#000';
-        ctx.font = '16px monospace';
-        const timeText = `Time:${state.formatTime(state.getElapsedTime())}`;
-        const tw = ctx.measureText(timeText).width;
-        ctx.fillText(timeText, (Config.SCREEN_WIDTH - tw) / 2, 75);
+        ctx.globalAlpha = 0.5;
+        ctx.font = 'bold 48px monospace';
+        const timeW = ctx.measureText(timeText).width;
+        const timeX = Math.floor((W - timeW) / 2);
+        const timeY = innerY + Config.PAUSE_TIME_TOP_MARGIN + 50;
+        ctx.fillText(timeText, timeX, timeY);
+        ctx.globalAlpha = 1;
 
         // Best time
-        const best = state.getHiScore(state.stageIndex);
-        if (best !== null) {
-            const bestText = `Best:${state.formatTime(best)}`;
-            const bw = ctx.measureText(bestText).width;
-            ctx.fillText(bestText, (Config.SCREEN_WIDTH - bw) / 2, 105);
+        ctx.font = '14px monospace';
+        let bestTimeStr;
+        const currentHiScore = state.currentHiScore;
+        if (currentHiScore) {
+            bestTimeStr = `- Best Time: ${state.formatTime(currentHiScore)} -`;
+        } else {
+            bestTimeStr = '- Best Time: --:-- -';
+        }
+        const bestW = ctx.measureText(bestTimeStr).width;
+        const bestX = (W - bestW) / 2;
+        const bestY = timeY + Config.PAUSE_BEST_TOP_GAP + 16;
+        ctx.fillText(bestTimeStr, bestX, bestY);
+
+        // Prompt (floating animation)
+        state.promptAnimTime = (state.promptAnimTime || 0) + 0.1;
+        const floatOffset = Math.floor(Math.sin(state.promptAnimTime) * Config.TITLE_PRESS_INFO_AMPLITUDE);
+        const promptBaseY = innerY + Config.PAUSE_PROMPT_Y;
+
+        ctx.fillStyle = '#000';
+        ctx.font = '14px monospace';
+
+        const resumeText = '[Esc] RESUME';
+        const resumeW = ctx.measureText(resumeText).width;
+        ctx.fillText(resumeText, (W - resumeW) / 2, promptBaseY + floatOffset);
+
+        if (state.isStageCleared(Config.TUTORIAL_STAGE_INDEX)) {
+            const selectText = '[Enter] STAGE SELECT';
+            const selectW = ctx.measureText(selectText).width;
+            ctx.fillText(selectText, (W - selectW) / 2, promptBaseY + Config.PAUSE_PROMPT_LINE_SPACING + floatOffset);
         }
 
-        // Hints
-        ctx.font = '14px monospace';
-        ctx.fillText('[Esc] Resume', 80, 148);
-        if (state.isStageCleared(Config.TUTORIAL_STAGE_INDEX)) {
-            ctx.fillText('[Enter] Stage Select', 80, 172);
+        // "PAUSED" label at bottom
+        ctx.font = 'bold 24px monospace';
+        const screenLabel = 'PAUSED';
+        const labelW = ctx.measureText(screenLabel).width;
+        const labelPadX = Config.CELEBRATION_TITLE_PAD_X;
+        const labelPadY = Config.CELEBRATION_TITLE_PAD_Y;
+        const labelBgW = labelW + labelPadX * 2;
+        const labelBgH = 30 + labelPadY * 2;
+        const labelBgX = (W - labelBgW) / 2;
+        const labelBgY = H - labelBgH + Config.PAUSE_LABEL_OFFSET_Y;
+
+        ctx.fillStyle = '#000';
+        ctx.fillRect(labelBgX, labelBgY, labelBgW, labelBgH);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(screenLabel, labelBgX + labelPadX, labelBgY + labelPadY + 22);
+    }
+
+    // --- Answer Animation (character reaction) ---
+    _drawAnswerAnim(images, frameIndex, x, y) {
+        if (!images || images.length === 0) return;
+        const img = images[frameIndex];
+        if (img && img.complete && img.naturalWidth > 0) {
+            this.ctx.drawImage(img, x, y);
         }
     }
 
@@ -597,62 +1016,166 @@ export class Renderer {
         ctx.closePath();
     }
 
-    // --- Tutorial Overlay ---
-    drawTutorialOverlay(tutorial) {
-        if (!tutorial.overlayVisible || tutorial.step === 0 || tutorial.step >= 5) return;
+    // --- Tutorial Overlay (10-step system) ---
+    _drawTutorialOverlay(tutorial, state) {
+        // First game hint (stop style)
+        if (tutorial.showingFirstGameHint && tutorial.overlayVisible) {
+            this._drawFirstGameHintOverlay(tutorial);
+            return;
+        }
+
+        // Step 4: crank indicator only (no text overlay)
+        if (tutorial.isTutorialStage && tutorial.step === 4) {
+            if (tutorial.crankIndicatorDelayTimer >= Config.TUTORIAL_CRANK_INDICATOR_DELAY) {
+                this._drawCrankIndicator();
+            }
+            return;
+        }
+
+        if (!tutorial.overlayVisible || tutorial.step === 0 || tutorial.step > Config.TUTORIAL_TOTAL_STEPS) return;
 
         const ctx = this.ctx;
         const W = Config.SCREEN_WIDTH;
         const H = Config.SCREEN_HEIGHT;
-        const ow = Config.TUTORIAL_OVERLAY_WIDTH;
-        const oh = Config.TUTORIAL_OVERLAY_HEIGHT;
+
+        let overlayW, overlayH;
+        if (tutorial.overlayType === "stop") {
+            overlayW = Config.TUTORIAL_STOP_OVERLAY_WIDTH;
+            overlayH = Config.TUTORIAL_STOP_OVERLAY_HEIGHT;
+        } else {
+            overlayW = Config.TUTORIAL_OVERLAY_WIDTH;
+            overlayH = Config.TUTORIAL_OVERLAY_HEIGHT;
+        }
         const border = Config.TUTORIAL_OVERLAY_BORDER;
         const shadow = Config.TUTORIAL_OVERLAY_SHADOW_OFFSET;
 
-        const ox = (W - ow) / 2;
-        const oy = (H - oh) / 2;
+        const ox = (W - overlayW) / 2;
+        const oy = (H - overlayH) / 2;
 
         // Shadow
-        this.fillRectDither(ox + shadow, oy + shadow, ow, oh, 0.5);
+        this.fillRectDither(ox + shadow, oy + shadow, overlayW, overlayH, 0.5);
 
         // Border
         ctx.fillStyle = '#000';
-        ctx.fillRect(ox, oy, ow, border);
-        ctx.fillRect(ox, oy + oh - border, ow, border);
-        ctx.fillRect(ox, oy + border, border, oh - border * 2);
-        ctx.fillRect(ox + ow - border, oy + border, border, oh - border * 2);
+        ctx.fillRect(ox, oy, overlayW, border);
+        ctx.fillRect(ox, oy + overlayH - border, overlayW, border);
+        ctx.fillRect(ox, oy + border, border, overlayH - border * 2);
+        ctx.fillRect(ox + overlayW - border, oy + border, border, overlayH - border * 2);
 
         // White bg
         ctx.fillStyle = '#fff';
-        ctx.fillRect(ox + border, oy + border, ow - border * 2, oh - border * 2);
+        ctx.fillRect(ox + border, oy + border, overlayW - border * 2, overlayH - border * 2);
 
-        // Step text
+        // Text
+        ctx.fillStyle = '#000';
+        const textData = Config.TUTORIAL_STEP_TEXT[tutorial.step];
+        if (textData) {
+            const innerW = overlayW - border * 2;
+            const lineHeight = 24;
+            const lineGap = 4;
+            const lineCount = textData[1] ? 2 : 1;
+            const totalTextH = lineCount * lineHeight + (lineCount - 1) * lineGap;
+            const promptH = tutorial.overlayType === "stop" ? 30 : 0;
+            const innerH = overlayH - border * 2;
+            const baseY = oy + border + (innerH - totalTextH - promptH) / 2;
+
+            ctx.font = '16px monospace';
+            const w1 = ctx.measureText(textData[0]).width;
+            ctx.fillText(textData[0], ox + border + (innerW - w1) / 2, baseY + 14);
+            if (textData[1]) {
+                const w2 = ctx.measureText(textData[1]).width;
+                ctx.fillText(textData[1], ox + border + (innerW - w2) / 2, baseY + lineHeight + lineGap + 14);
+            }
+        }
+
+        // Stop: page indicator
+        const pageInfo = Config.TUTORIAL_STOP_PAGE[tutorial.step];
+        if (tutorial.overlayType === "stop" && pageInfo) {
+            ctx.font = '14px monospace';
+            const pageText = `${pageInfo[0]}/${pageInfo[1]}`;
+            const pageW = ctx.measureText(pageText).width;
+            ctx.fillText(pageText, ox + overlayW - border - pageW - 8, oy + border + 16);
+        }
+
+        // Stop: "PRESS [Enter]" prompt (floating)
+        if (tutorial.overlayType === "stop") {
+            const floatOffset = Math.floor(Math.sin(tutorial.promptAnimTime) * Config.TITLE_PRESS_INFO_AMPLITUDE);
+            const promptBaseY = oy + overlayH - border - 22;
+            ctx.font = '14px monospace';
+            const promptText = 'PRESS [Enter]';
+            const promptWidth = ctx.measureText(promptText).width;
+            const innerW = overlayW - border * 2;
+            ctx.fillText(promptText, ox + border + (innerW - promptWidth) / 2, promptBaseY + floatOffset);
+        }
+    }
+
+    _drawFirstGameHintOverlay(tutorial) {
+        const ctx = this.ctx;
+        const W = Config.SCREEN_WIDTH;
+        const H = Config.SCREEN_HEIGHT;
+        const overlayW = Config.TUTORIAL_STOP_OVERLAY_WIDTH;
+        const overlayH = Config.TUTORIAL_STOP_OVERLAY_HEIGHT;
+        const border = Config.TUTORIAL_OVERLAY_BORDER;
+        const shadow = Config.TUTORIAL_OVERLAY_SHADOW_OFFSET;
+        const ox = (W - overlayW) / 2;
+        const oy = (H - overlayH) / 2;
+
+        // Shadow
+        this.fillRectDither(ox + shadow, oy + shadow, overlayW, overlayH, 0.5);
+
+        // Border
+        ctx.fillStyle = '#000';
+        ctx.fillRect(ox, oy, overlayW, border);
+        ctx.fillRect(ox, oy + overlayH - border, overlayW, border);
+        ctx.fillRect(ox, oy + border, border, overlayH - border * 2);
+        ctx.fillRect(ox + overlayW - border, oy + border, border, overlayH - border * 2);
+
+        // White bg
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(ox + border, oy + border, overlayW - border * 2, overlayH - border * 2);
+
+        // Text
         ctx.fillStyle = '#000';
         ctx.font = '16px monospace';
-        ctx.fillText(`Step ${tutorial.step}/4`, ox + border + 12, oy + border + 20);
+        const textData = Config.FIRST_GAME_HINT_TEXT;
+        const innerW = overlayW - border * 2;
+        const innerH = overlayH - border * 2;
+        const lineHeight = 24;
+        const lineGap = 4;
+        const totalTextH = lineHeight * 2 + lineGap;
+        const promptH = 30;
+        const baseY = oy + border + (innerH - totalTextH - promptH) / 2;
 
-        const instrX = ox + border + 12;
-        const instrY = oy + border + 48;
-        ctx.font = '14px monospace';
-
-        switch (tutorial.step) {
-            case 1:
-                ctx.fillText('Use Left/Right arrows', instrX, instrY);
-                ctx.fillText('to browse frames', instrX, instrY + 20);
-                break;
-            case 2:
-                ctx.fillText('Hold [Space] to grab', instrX, instrY);
-                ctx.fillText('a frame', instrX, instrY + 20);
-                break;
-            case 3:
-                ctx.fillText('Arrange frames in', instrX, instrY);
-                ctx.fillText('the correct order!', instrX, instrY + 20);
-                break;
-            case 4:
-                ctx.fillText('Press [Enter]', instrX, instrY);
-                ctx.fillText('to check!', instrX, instrY + 20);
-                break;
+        const w1 = ctx.measureText(textData[0]).width;
+        ctx.fillText(textData[0], ox + border + (innerW - w1) / 2, baseY + 14);
+        if (textData[1]) {
+            const w2 = ctx.measureText(textData[1]).width;
+            ctx.fillText(textData[1], ox + border + (innerW - w2) / 2, baseY + lineHeight + lineGap + 14);
         }
+
+        // "PRESS [Enter]" prompt
+        const floatOffset = Math.floor(Math.sin(tutorial.promptAnimTime) * Config.TITLE_PRESS_INFO_AMPLITUDE);
+        const promptBaseY = oy + overlayH - border - 22;
+        ctx.font = '14px monospace';
+        const promptText = 'PRESS [Enter]';
+        const promptWidth = ctx.measureText(promptText).width;
+        ctx.fillText(promptText, ox + border + (innerW - promptWidth) / 2, promptBaseY + floatOffset);
+    }
+
+    _drawCrankIndicator() {
+        const ctx = this.ctx;
+        const W = Config.SCREEN_WIDTH;
+        const H = Config.SCREEN_HEIGHT;
+
+        // Simple crank indicator (arrows showing rotation)
+        const cx = W / 2;
+        const cy = H - 40;
+
+        ctx.fillStyle = '#000';
+        ctx.font = '14px monospace';
+        const text = '<< Rotate >>';
+        const tw = ctx.measureText(text).width;
+        ctx.fillText(text, cx - tw / 2, cy);
     }
 
     // --- Transition ---
@@ -662,21 +1185,27 @@ export class Renderer {
         }
     }
 
-    // --- Thank You Screen (Stage 3 intercept) ---
+    // --- Thank You Screen ---
     drawThankYouScreen() {
         const ctx = this.ctx;
+        const W = Config.SCREEN_WIDTH;
         this.clear('#000');
 
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 24px monospace';
-        ctx.fillText('Thank You', 110, 80);
-        ctx.fillText('for Playing!', 95, 115);
+        const line1 = 'Thank You';
+        const line2 = 'for Playing!';
+        ctx.fillText(line1, (W - ctx.measureText(line1).width) / 2, 80);
+        ctx.fillText(line2, (W - ctx.measureText(line2).width) / 2, 115);
 
         ctx.font = '14px monospace';
-        ctx.fillText('Full game available on', 75, 160);
-        ctx.fillText('Playdate Catalog', 100, 185);
+        const line3 = 'Full game available on';
+        const line4 = 'Playdate Catalog';
+        ctx.fillText(line3, (W - ctx.measureText(line3).width) / 2, 160);
+        ctx.fillText(line4, (W - ctx.measureText(line4).width) / 2, 185);
 
         ctx.font = '12px monospace';
-        ctx.fillText('[Enter] Back to Menu', 100, 220);
+        const line5 = '[Enter] Back to Menu';
+        ctx.fillText(line5, (W - ctx.measureText(line5).width) / 2, 220);
     }
 }

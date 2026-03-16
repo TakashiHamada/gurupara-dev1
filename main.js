@@ -6,6 +6,7 @@ import { InputHandler } from './engine/InputHandler.js';
 import { Renderer } from './engine/Renderer.js';
 import { AssetLoader } from './engine/AssetLoader.js';
 import { Transition } from './engine/Transition.js';
+import { Sound } from './engine/Sound.js';
 
 class Game {
     constructor() {
@@ -15,41 +16,81 @@ class Game {
         this.renderer = new Renderer(this.canvas);
         this.assets = new AssetLoader();
         this.transition = new Transition();
+        this.sound = new Sound();
 
-        // Tutorial state
+        // Tutorial state (10-step progressive system from production)
         this.tutorial = {
             isTutorialStage: false,
             step: 0,
             idleTimer: 0,
             overlayVisible: false,
-            hasGrabbed: false,
-            hasPlaced: false,
-            correctOrder: false,
-            grabHoldTimer: 0,
+            overlayType: null, // "stop" / "interactive" / null
+            crankUnlocked: false,
+            dpadUnlocked: false,
+            checkUnlocked: false,
+            framesRotatedCount: 0,
+            step8DisplayTimer: 0,
+            step9DisplayTimer: 0,
+            step10DisplayTimer: 0,
+            overlayPending: false,
+            overlayDelayTimer: 0,
+            crankIndicatorDelayTimer: 0,
+            promptAnimTime: 0,
+            // First game hint
+            showingFirstGameHint: false,
+            // Good animation for stop overlays
+            goodAnimFrame: 0,
+            goodAnimTimer: 0,
+            goodAnimPhase: "hidden", // "hidden" / "forward" / "visible" / "reverse"
         };
 
-        // Title animation
-        this.titleAnimTime = 0;
+        // Title state (production-style animated title)
+        this.titleState = {
+            animFrame: 0,
+            animTimer: 0,
+            bgScrollX: 0,
+            bgScrollY: 0,
+            bgIntroFrame: 0,
+            selectedMenuIndex: 0,
+            crankAccumulated: 0,
+            arrowAnimTime: 0,
+            animTime: 0,
+        };
 
         // Selection screen thumbnail animation
         this.state.selectionAnimFrame = 0;
         this.selectionAnimTimer = 0;
 
-        // Crank visual (hardware shell removed)
+        // Crank visual
         this.crankElement = null;
 
         // Thank-you screen
         this.showThankYou = false;
 
+        // Secret combo state
+        this.secretState = {
+            progress: 0,
+            lastInputFrame: 0,
+            frameCounter: 0,
+        };
+
         this.running = false;
         this.lastFrameTime = 0;
-        this.targetFrameInterval = 1000 / 30; // 30fps like Playdate
+        this.targetFrameInterval = 1000 / 30;
     }
 
     async init() {
-        await this.assets.loadAll();
+        console.log('[Game] init() starting...');
+        await Promise.all([
+            this.assets.loadAll(),
+            this.sound.loadAll(),
+        ]);
+        console.log(`[Game] Assets loaded. titleImages:${this.assets.titleImages.length}, sound:${this.sound.loaded}`);
+        console.log(`[Game] AnswerAnim images: good=${this.assets.answerAnimImages.good.length} bad=${this.assets.answerAnimImages.bad.length} near=${this.assets.answerAnimImages.near.length} sobad=${this.assets.answerAnimImages.sobad.length}`);
+        this.sound.playBGM('title');
         this.running = true;
         this.lastFrameTime = performance.now();
+        console.log('[Game] init() complete, starting game loop');
         requestAnimationFrame((t) => this.loop(t));
     }
 
@@ -64,6 +105,7 @@ class Game {
 
         this.input.update();
         this.input.computeCrankDelta();
+        this.sound.update();
         this.update();
         this.draw();
         this.input.endFrame();
@@ -72,8 +114,9 @@ class Game {
     update() {
         this.state.frameCounter++;
         this.transition.update();
+        // Update answer animations
+        this._updateAnswerAnimations();
 
-        // Update crank visual
         if (this.crankElement) {
             this.crankElement.style.transform = `rotate(${this.input.crankAngle}deg)`;
         }
@@ -100,7 +143,7 @@ class Game {
     draw() {
         switch (this.state.currentScene) {
             case Scene.TITLE:
-                this.renderer.drawTitleScreen(this.titleAnimTime);
+                this.renderer.drawTitleScreen(this.titleState, this.assets.titleImages);
                 break;
             case Scene.SELECTION:
                 this.renderer.drawSelectionScreen(this.state, this.assets);
@@ -109,10 +152,7 @@ class Game {
                 if (this.showThankYou) {
                     this.renderer.drawThankYouScreen();
                 } else {
-                    this.renderer.drawGameScene(this.state, this.assets);
-                    if (this.tutorial.isTutorialStage && !this.state.isChecking && !this.state.showResult) {
-                        this.renderer.drawTutorialOverlay(this.tutorial);
-                    }
+                    this.renderer.drawGameScene(this.state, this.assets, this.tutorial);
                 }
                 break;
         }
@@ -122,25 +162,88 @@ class Game {
 
     // --- Title ---
     updateTitle() {
-        this.titleAnimTime += 0.1;
+        const ts = this.titleState;
+        ts.animTime += 0.1;
+        ts.arrowAnimTime += 0.1;
 
+        // Title animation frame update
+        ts.animTimer++;
+        if (ts.animTimer >= Config.TITLE_ANIM_FRAME_INTERVAL) {
+            ts.animTimer = 0;
+            ts.animFrame = (ts.animFrame + 1) % Config.TITLE_ANIM_FRAME_COUNT;
+        }
+
+        // Dot intro animation
+        if (ts.bgIntroFrame < Config.TITLE_BG_DOT_INTRO_FRAMES) {
+            ts.bgIntroFrame++;
+        }
+
+        // Background scroll (after intro completes)
+        if (ts.bgIntroFrame >= Config.TITLE_BG_DOT_INTRO_FRAMES) {
+            const speed = Config.TITLE_BG_SCROLL_SPEED;
+            const spacing = Config.TITLE_BG_DOT_SPACING;
+            ts.bgScrollX += speed;
+            ts.bgScrollY -= speed;
+            if (ts.bgScrollX >= spacing) ts.bgScrollX -= spacing;
+            if (ts.bgScrollY <= -spacing) ts.bgScrollY += spacing;
+        }
+
+        // Menu navigation (left/right)
+        if (this.input.isRightJustPressed()) {
+            ts.selectedMenuIndex = (ts.selectedMenuIndex + 1) % 3;
+            ts.arrowAnimTime = 0;
+            ts.crankAccumulated = 0;
+            this.sound.playCursor();
+        } else if (this.input.isLeftJustPressed()) {
+            ts.selectedMenuIndex = (ts.selectedMenuIndex + 2) % 3;
+            ts.arrowAnimTime = 0;
+            ts.crankAccumulated = 0;
+            this.sound.playCursor();
+        }
+
+        // Crank-based menu navigation
+        const crankDelta = this.input.getCrankDelta();
+        if (crankDelta !== 0) {
+            ts.crankAccumulated += crankDelta;
+            if (ts.crankAccumulated >= Config.TITLE_MENU_CRANK_DEGREES) {
+                ts.selectedMenuIndex = (ts.selectedMenuIndex + 1) % 3;
+                ts.crankAccumulated = 0;
+                ts.arrowAnimTime = 0;
+                this.sound.playCursor();
+            } else if (ts.crankAccumulated <= -Config.TITLE_MENU_CRANK_DEGREES) {
+                ts.selectedMenuIndex = (ts.selectedMenuIndex + 2) % 3;
+                ts.crankAccumulated = 0;
+                ts.arrowAnimTime = 0;
+                this.sound.playCursor();
+            }
+        }
+
+        // Select menu item
         if (this.input.isCheckJustPressed()) {
-            // A button (Enter) pressed
-            const tutorialCleared = this.state.isStageCleared(Config.TUTORIAL_STAGE_INDEX);
+            if (ts.selectedMenuIndex === 0) {
+                // START GAME
+                this.sound.playSelected();
+                const tutorialCleared = this.state.isStageCleared(Config.TUTORIAL_STAGE_INDEX);
+                console.log(`[Title] START GAME pressed. tutorialCleared=${tutorialCleared}`);
 
-            this.transition.start(
-                () => {
-                    if (tutorialCleared) {
-                        this.state.currentScene = Scene.SELECTION;
-                        this.state.selectedIndex = this.state.lastSelectedStage;
-                    } else {
-                        // Go directly to tutorial
-                        this.state.currentScene = Scene.GAME;
-                        this.startStage(Config.TUTORIAL_STAGE_INDEX);
-                    }
-                },
-                null
-            );
+                this.transition.start(
+                    () => {
+                        if (tutorialCleared) {
+                            console.log('[Scene] Title → Selection');
+                            this.state.currentScene = Scene.SELECTION;
+                            this.state.selectedIndex = this.state.lastSelectedStage;
+                            this.sound.playBGM('selection');
+                        } else {
+                            console.log('[Scene] Title → Game (tutorial)');
+                            this.state.currentScene = Scene.GAME;
+                            this.startStage(Config.TUTORIAL_STAGE_INDEX);
+                            this.sound.playBGM('game');
+                        }
+                    },
+                    null
+                );
+            }
+            // SETTINGS and CREDITS not implemented in demo
         }
     }
 
@@ -154,58 +257,53 @@ class Game {
         }
 
         if (this.state.isPaused) {
-            // Pause overlay
             if (this.input.isPauseJustPressed()) {
                 this.state.isPaused = false;
+                this.sound.playEnable();
             }
             return;
         }
 
-        // Pause toggle
         if (this.input.isPauseJustPressed()) {
             this.state.isPaused = true;
+            this.sound.playEnable();
             return;
         }
 
         // Cursor movement
         const cols = Config.SELECTION_GRID_COLS;
         const rows = Config.SELECTION_GRID_ROWS;
-        const total = cols * rows;
         let idx = this.state.selectedIndex;
         let moved = false;
 
-        // D-pad (Left/Right arrows serve as D-pad in Selection screen)
         if (this.input.isLeftJustPressed()) {
             const col = idx % cols;
             const row = Math.floor(idx / cols);
-            const newCol = (col - 1 + cols) % cols;
-            idx = row * cols + newCol;
+            idx = row * cols + ((col - 1 + cols) % cols);
             moved = true;
         }
         if (this.input.isRightJustPressed()) {
             const col = idx % cols;
             const row = Math.floor(idx / cols);
-            const newCol = (col + 1) % cols;
-            idx = row * cols + newCol;
+            idx = row * cols + ((col + 1) % cols);
             moved = true;
         }
         if (this.input.isUpJustPressed()) {
             const col = idx % cols;
             const row = Math.floor(idx / cols);
-            const newRow = (row - 1 + rows) % rows;
-            idx = newRow * cols + col;
+            idx = ((row - 1 + rows) % rows) * cols + col;
             moved = true;
         }
         if (this.input.isDownJustPressed()) {
             const col = idx % cols;
             const row = Math.floor(idx / cols);
-            const newRow = (row + 1) % rows;
-            idx = newRow * cols + col;
+            idx = ((row + 1) % rows) * cols + col;
             moved = true;
         }
 
         if (moved) {
             this.state.selectedIndex = idx;
+            this.sound.playSelectionCursor();
         }
 
         // Start game
@@ -213,23 +311,24 @@ class Game {
             const stageInfo = Config.STAGES.find(s => s.index === this.state.selectedIndex);
 
             if (!stageInfo) {
-                // No stage data - if index >= 3, show thank you
-                if (this.state.selectedIndex >= 3 || this.state.selectedIndex === 27) {
-                    this.transition.start(
-                        () => {
-                            this.state.currentScene = Scene.GAME;
-                            this.showThankYou = true;
-                        },
-                        null
-                    );
-                }
+                // No stage data - show thank you for unavailable stages
+                this.sound.playEnable();
+                this.transition.start(
+                    () => {
+                        this.state.currentScene = Scene.GAME;
+                        this.showThankYou = true;
+                    },
+                    null
+                );
                 return;
             }
 
+            this.sound.playSelected();
             this.transition.start(
                 () => {
                     this.state.currentScene = Scene.GAME;
                     this.startStage(this.state.selectedIndex);
+                    this.sound.playBGM('game');
                 },
                 null
             );
@@ -237,32 +336,135 @@ class Game {
     }
 
     startStage(stageIndex) {
+        console.log(`[Game] startStage(${stageIndex})`);
         this.state.startGame(stageIndex);
         this.showThankYou = false;
 
-        // Tutorial init
-        this.tutorial.isTutorialStage = (stageIndex === Config.TUTORIAL_STAGE_INDEX);
-        if (this.tutorial.isTutorialStage) {
-            this.tutorial.step = 1;
-            this.tutorial.idleTimer = 0;
-            this.tutorial.overlayVisible = false;
-            this.tutorial.hasGrabbed = false;
-            this.tutorial.hasPlaced = false;
-            this.tutorial.correctOrder = false;
-            this.tutorial.grabHoldTimer = 0;
+        // Tutorial init (10-step system)
+        const t = this.tutorial;
+        t.showingFirstGameHint = false;
+        t.isTutorialStage = (stageIndex === Config.TUTORIAL_STAGE_INDEX);
+
+        if (t.isTutorialStage) {
+            console.log('[Tutorial] Starting tutorial stage');
+            this._tutorialEnterStep(1);
         } else {
-            this.tutorial.step = 0;
-            this.tutorial.overlayVisible = false;
+            t.step = 0;
+            t.overlayVisible = false;
+            t.overlayType = null;
+            t.crankUnlocked = false;
+            t.dpadUnlocked = false;
+            t.checkUnlocked = false;
+            t.framesRotatedCount = 0;
+            t.step8DisplayTimer = 0;
+            t.step9DisplayTimer = 0;
+            t.step10DisplayTimer = 0;
+            t.overlayPending = false;
+            t.overlayDelayTimer = 0;
+            t.crankIndicatorDelayTimer = 0;
+            t.promptAnimTime = 0;
+
+            // First game hint (first time playing non-tutorial after clearing tutorial)
+            if (!this.state.shownFirstGameHint && this.state.isStageCleared(Config.TUTORIAL_STAGE_INDEX)) {
+                t.showingFirstGameHint = true;
+                t.overlayType = "stop";
+                t.overlayPending = true;
+                t.overlayDelayTimer = 0;
+                t.promptAnimTime = 0;
+            }
         }
+
+        // Reset secret combo
+        this.secretState = { progress: 0, lastInputFrame: 0, frameCounter: 0 };
+    }
+
+    _tutorialEnterStep(step) {
+        const t = this.tutorial;
+        console.log(`[Tutorial] enterStep(${step}) type=${Config.TUTORIAL_STEP_TYPE[step] || 'none'}`);
+        t.step = step;
+        t.idleTimer = 0;
+
+        // Update unlock flags
+        if (step >= Config.TUTORIAL_CRANK_UNLOCK_STEP) t.crankUnlocked = true;
+        if (step >= Config.TUTORIAL_DPAD_UNLOCK_STEP) t.dpadUnlocked = true;
+        if (step >= Config.TUTORIAL_CHECK_UNLOCK_STEP) t.checkUnlocked = true;
+
+        // Set overlay type from config
+        t.overlayType = Config.TUTORIAL_STEP_TYPE[step] || null;
+
+        if (t.overlayType === "stop") {
+            // Check if previous step was also stop (consecutive stop)
+            const prevType = Config.TUTORIAL_STEP_TYPE[step - 1];
+            if (prevType === "stop") {
+                t.overlayVisible = true;
+                t.promptAnimTime = 0;
+            } else {
+                // Group start: delay before showing
+                t.overlayPending = true;
+                t.overlayDelayTimer = 0;
+                t.promptAnimTime = 0;
+            }
+        } else if (step === 9) {
+            t.overlayVisible = true;
+        } else {
+            t.overlayVisible = false;
+        }
+
+        // Tutorial good animation: reverse on group end (step 4, 8)
+        if (step === 4 || step === 8) {
+            if (t.goodAnimFrame > 0) {
+                t.goodAnimPhase = "reverse";
+                t.goodAnimTimer = 0;
+                console.log(`[Tutorial] Good anim → reverse (group end, step ${step})`);
+            } else {
+                t.goodAnimPhase = "hidden";
+            }
+        }
+
+        // Reset step-specific state
+        if (step === 4) {
+            t.framesRotatedCount = 0;
+            t.crankIndicatorDelayTimer = 0;
+        } else if (step === 8) {
+            t.step8DisplayTimer = 0;
+        } else if (step === 9) {
+            t.step9DisplayTimer = 0;
+        } else if (step === 10) {
+            t.step10DisplayTimer = 0;
+        }
+    }
+
+    _isTutorialStopOverlayActive() {
+        const t = this.tutorial;
+        if (t.overlayPending) return true;
+        if (t.showingFirstGameHint && t.overlayVisible) return true;
+        return t.overlayVisible && t.overlayType === "stop";
+    }
+
+    _isTutorialCrankBlocked() {
+        const t = this.tutorial;
+        return t.isTutorialStage && !t.crankUnlocked;
+    }
+
+    _isTutorialDpadBlocked() {
+        const t = this.tutorial;
+        return t.isTutorialStage && !t.dpadUnlocked;
+    }
+
+    _isTutorialCheckBlocked() {
+        const t = this.tutorial;
+        return t.isTutorialStage && !t.checkUnlocked;
     }
 
     // --- Thank You ---
     updateThankYou() {
         if (this.input.isCheckJustPressed()) {
+            this.sound.playBackToMenu();
             this.transition.start(
                 () => {
                     this.state.currentScene = Scene.SELECTION;
                     this.showThankYou = false;
+                    this.sound.playBGM('selection');
                 },
                 null
             );
@@ -291,9 +493,13 @@ class Game {
         // Idle hint
         this._updateIdleHint(crankDelta);
 
-        // Tutorial overlay
-        if (this.tutorial.isTutorialStage) {
-            this._updateTutorialOverlay(crankDelta);
+        // Tutorial overlay update
+        this._updateTutorialOverlay(crankDelta);
+
+        // Celebration update
+        if (state.isCelebrating) {
+            this._updateCelebration();
+            return;
         }
 
         // Result screen input
@@ -335,53 +541,60 @@ class Game {
         // Grab animation
         if (state.isGrabbing) {
             this._updateGrabAnimation();
-
-            // Tutorial grab hold
-            if (this.tutorial.isTutorialStage && this.tutorial.step === 2) {
-                this.tutorial.grabHoldTimer++;
-                if (this.tutorial.grabHoldTimer >= Config.TUTORIAL_GRAB_HOLD_THRESHOLD) {
-                    this.tutorial.step = 3;
-                    this.tutorial.idleTimer = 0;
-                    this.tutorial.overlayVisible = true;
-                }
-            }
         }
 
         // Process grab/place
         const grabPressed = this.input.isGrabPressed();
 
-        if (grabPressed && !state.isGrabbing && !this._isBlocked()) {
+        if (grabPressed && !state.isGrabbing && !this._isBlocked() && !this._isTutorialDpadBlocked()) {
             this._doGrab();
+            this.sound.playGrab();
         }
 
         if (!grabPressed && state.isGrabbing && state.grabAnimProgress >= 1) {
             this._doPlace();
+            this.sound.playRelease();
         }
 
-        // Frame movement from crank (allowed even while grabbing, to change insert position)
-        if (!this._isCrankBlocked()) {
+        // Frame movement from crank
+        if (!this._isCrankBlocked() && !this._isTutorialCrankBlocked()) {
             this._processFrameMovement(crankDelta);
         }
 
         // Check answer (Enter / A button)
-        if (this.input.isCheckJustPressed() && !this._isBlocked()) {
-            this._startCheck();
+        if (this.input.isCheckJustPressed() && !this._isBlocked() && !this._isTutorialCheckBlocked()) {
+            // Don't check if tutorial stop overlay is active
+            if (!this._isTutorialStopOverlayActive()) {
+                this._startCheck();
+            }
         }
 
         // Pause (Esc / B button)
-        if (this.input.isPauseJustPressed() && !this._isBlocked()) {
-            state.togglePause();
+        if (this.input.isPauseJustPressed() && !this._isBlocked() && !this._isTutorialStopOverlayActive()) {
+            // Tutorial not cleared: no pause allowed
+            const tutorialNotCleared = this.tutorial.isTutorialStage && !state.isStageCleared(Config.TUTORIAL_STAGE_INDEX);
+            if (!tutorialNotCleared) {
+                state.togglePause();
+                this.sound.playEnable();
+                this.sound.pauseBGM();
+            }
         }
     }
 
     _isBlocked() {
         const s = this.state;
-        return s.isGrabbing || s.isPlacing || s.isChecking || s.isWaitingResult || s.showResult || s.isSliding || s.isPaused;
+        const tutorialBlocked = this._isTutorialStopOverlayActive();
+        return s.isGrabbing || s.isPlacing || s.isChecking || s.isWaitingResult ||
+               s.showResult || s.isSliding || s.isPaused || s.isPlayingClearAnim ||
+               s.isCelebrating || tutorialBlocked;
     }
 
     _isCrankBlocked() {
         const s = this.state;
-        return s.isPlacing || s.isChecking || s.isWaitingResult || s.showResult || s.isSliding || s.isPaused;
+        if (this._isTutorialStopOverlayActive()) return true;
+        if (this._isTutorialCrankBlocked()) return true;
+        return s.isPlacing || s.isChecking || s.isWaitingResult || s.showResult ||
+               s.isSliding || s.isPaused || s.isPlayingClearAnim || s.isCelebrating;
     }
 
     _updateCrankSmoothing(crankDelta) {
@@ -421,8 +634,8 @@ class Game {
             s.currentFrameIndex = (s.currentFrameIndex + 1) % count;
             moved = true;
 
-            // Start slide animation
             this._startSlide(1, prevImg);
+            this.sound.playFlip();
 
             if (s.isQuickStarting) {
                 s.accumulatedAngle = 0;
@@ -441,6 +654,7 @@ class Game {
             moved = true;
 
             this._startSlide(-1, prevImg);
+            this.sound.playFlipBack();
 
             if (s.isQuickStarting) {
                 s.accumulatedAngle = 0;
@@ -450,10 +664,12 @@ class Game {
             threshold = s.degreesPerFrame;
         }
 
-        if (moved && this.tutorial.isTutorialStage && this.tutorial.step === 1) {
-            this.tutorial.step = 2;
-            this.tutorial.idleTimer = 0;
-            this.tutorial.overlayVisible = false;
+        // Tutorial: track frame changes for Step 4
+        if (moved && this.tutorial.isTutorialStage && this.tutorial.step === 4) {
+            this.tutorial.framesRotatedCount++;
+            if (this.tutorial.framesRotatedCount >= Config.TUTORIAL_CRANK_FRAMES_REQUIRED) {
+                this._tutorialEnterStep(5);
+            }
         }
     }
 
@@ -486,9 +702,9 @@ class Game {
             s.currentFrameIndex = 0;
         }
 
-        if (this.tutorial.isTutorialStage && this.tutorial.step === 2) {
-            this.tutorial.grabHoldTimer = 0;
-            this.tutorial.hasGrabbed = true;
+        // Tutorial: Step 8 D-pad pressed → Step 9
+        if (this.tutorial.isTutorialStage && this.tutorial.step === 8) {
+            this._tutorialEnterStep(9);
         }
     }
 
@@ -518,19 +734,12 @@ class Game {
             s.puzzle.placeFrame(s.placeTargetIndex, s.placingFrame);
             s.isPlacing = false;
 
-            // Tutorial step 3 check
-            if (this.tutorial.isTutorialStage && this.tutorial.step === 3) {
-                this.tutorial.hasPlaced = true;
+            // Tutorial Step 9: check if correct after placing
+            if (this.tutorial.isTutorialStage && this.tutorial.step === 9) {
                 if (s.puzzle.isCorrectOrder()) {
-                    this.tutorial.step = 4;
-                    this.tutorial.idleTimer = 0;
-                    this.tutorial.overlayVisible = true;
-                    this.tutorial.correctOrder = true;
+                    this._tutorialEnterStep(10);
                 } else {
-                    this.tutorial.step = 2;
-                    this.tutorial.idleTimer = 0;
-                    this.tutorial.overlayVisible = false;
-                    this.tutorial.grabHoldTimer = 0;
+                    this._tutorialEnterStep(8);
                 }
             }
 
@@ -541,24 +750,26 @@ class Game {
     _startCheck() {
         const s = this.state;
 
-        // Tutorial: allow check even during step 1 overlay
-        if (this._isBlocked()) {
-            if (!(this.tutorial.isTutorialStage && this.tutorial.step === 1 && this.tutorial.overlayVisible)) {
-                return;
-            }
-        }
-
         s.isChecking = true;
         s.checkAnimFrame = 0;
         s.checkAnimTimer = 0;
         s.resultCorrect = s.puzzle.isCorrectOrder();
+        if (!s.resultCorrect) {
+            s.ngLevel = s.puzzle.evaluateWrongness();
+        }
         s.idleTimer = 0;
         s.showHint = false;
 
+        // Sound: mute BGM, play checking SE
+        this.sound.muteBGM();
+        this.sound.playChecking();
+        console.log(`[Game] Check started. correct=${s.resultCorrect}, ngLevel=${s.ngLevel}`);
+
+        // Tutorial: hide overlay and advance
         if (this.tutorial.isTutorialStage) {
             this.tutorial.overlayVisible = false;
-            if (this.tutorial.step === 4) {
-                this.tutorial.step = 5;
+            if (this.tutorial.step === 10) {
+                this.tutorial.step = 11; // Tutorial complete
             }
         }
     }
@@ -569,6 +780,7 @@ class Game {
         if (s.checkAnimTimer >= Config.CHECK_FRAME_INTERVAL) {
             s.checkAnimTimer = 0;
             s.checkAnimFrame++;
+            s.showCheckBlackFrame = true;
 
             if (s.checkAnimFrame >= s.frameCount * 2) {
                 s.isChecking = false;
@@ -583,15 +795,97 @@ class Game {
         s.waitResultTimer++;
         if (s.waitResultTimer >= Config.WAIT_RESULT_DURATION) {
             s.isWaitingResult = false;
-            s.showResult = true;
-            s.resultAnimTime = 0;
 
             if (s.resultCorrect) {
+                // Calculate clear time
                 s.clearTime = performance.now() - s.startTime - s.totalPausedTime;
+                // Hi score
                 s.isNewHiScore = s.setHiScore(s.stageIndex, s.clearTime);
+                // Start celebration + good animation
+                this._startCelebration();
+                s.goodAnimFrame = 0;
+                s.goodAnimTimer = 0;
+                s.goodAnimPhase = "forward";
+                console.log('[Game] Result: CORRECT → celebration + good anim');
+                this.sound.playOK();
             } else {
                 s.isNewHiScore = false;
+                s.showResult = true;
+                s.resultAnimTime = 0;
+                // Start NG animation
+                s.ngAnimFrame = 0;
+                s.ngAnimTimer = 0;
+                s.ngAnimPhase = "forward";
+                console.log(`[Game] Result: WRONG (ngLevel=${s.ngLevel}) → ng anim`);
+                this.sound.playNG(s.ngLevel);
             }
+        }
+    }
+
+    _startCelebration() {
+        const s = this.state;
+        s.isCelebrating = true;
+        s.celebrationTimer = 0;
+        s.celebrationTitleShown = true;
+        s.celebrationParticles = [];
+        this.sound.playPop();
+
+        // Generate particles
+        const minSize = Config.CELEBRATION_PARTICLE_MIN_SIZE;
+        const maxSize = Config.CELEBRATION_PARTICLE_MAX_SIZE;
+        const vxBase = Config.CELEBRATION_VX_BASE;
+        const vxRange = Config.CELEBRATION_VX_RANGE;
+        const vyBase = Config.CELEBRATION_VY_BASE;
+        const vyRange = Config.CELEBRATION_VY_RANGE;
+
+        // Left cracker
+        for (let i = 0; i < Config.CELEBRATION_PARTICLE_COUNT; i++) {
+            s.celebrationParticles.push({
+                x: Config.CELEBRATION_LEFT_X,
+                y: Config.CELEBRATION_CRACKER_Y,
+                vx: vxBase + Math.random() * vxRange,
+                vy: vyBase - Math.random() * vyRange,
+                w: minSize + Math.floor(Math.random() * (maxSize - minSize + 1)),
+                h: minSize + Math.floor(Math.random() * (maxSize - minSize + 1)),
+            });
+        }
+
+        // Right cracker
+        for (let i = 0; i < Config.CELEBRATION_PARTICLE_COUNT; i++) {
+            s.celebrationParticles.push({
+                x: Config.CELEBRATION_RIGHT_X,
+                y: Config.CELEBRATION_CRACKER_Y,
+                vx: -(vxBase + Math.random() * vxRange),
+                vy: vyBase - Math.random() * vyRange,
+                w: minSize + Math.floor(Math.random() * (maxSize - minSize + 1)),
+                h: minSize + Math.floor(Math.random() * (maxSize - minSize + 1)),
+            });
+        }
+    }
+
+    _updateCelebration() {
+        const s = this.state;
+        s.celebrationTimer++;
+
+        // Play answer voiceover at delay point
+        if (s.celebrationTimer === Config.CELEBRATION_VOICE_DELAY) {
+            this.sound.playAnswer(s.stageIndex);
+        }
+
+        // Update particle physics
+        for (const p of s.celebrationParticles) {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += Config.CELEBRATION_GRAVITY;
+        }
+
+        // End celebration → show result
+        const totalDuration = Config.CELEBRATION_VOICE_DELAY + Config.CELEBRATION_TITLE_PHASE;
+        if (s.celebrationTimer >= totalDuration) {
+            s.isCelebrating = false;
+            s.celebrationParticles = [];
+            s.showResult = true;
+            s.resultAnimTime = 0;
         }
     }
 
@@ -605,14 +899,16 @@ class Game {
 
         if (s.resultCorrect) {
             s.resultAnimTime = (s.resultAnimTime || 0) + 0.1;
+            s.promptAnimTime = (s.promptAnimTime || 0) + 0.1;
 
             if (this.input.isCheckJustPressed()) {
-                // Go to selection
                 s.showResult = false;
+                this.sound.playBackToMenu();
                 this.transition.start(
                     () => {
                         s.currentScene = Scene.SELECTION;
                         s.selectedIndex = s.lastSelectedStage;
+                        this.sound.playBGM('selection');
                     },
                     null
                 );
@@ -622,11 +918,21 @@ class Game {
                 s.clearAnimFrame = 0;
                 s.clearAnimTimer = 0;
                 s.clearAnimLoopCount = 0;
+                s.celebrationTitleShown = true;
             }
         } else {
-            // NG: any input dismisses
-            if (this.input.isAnyJustPressed() || Math.abs(crankDelta) > Config.CRANK_THRESHOLD) {
-                s.showResult = false;
+            // NG: any input triggers reverse animation (which dismisses on completion)
+            if (s.ngAnimPhase === "hold") {
+                if (this.input.isAnyJustPressed() || Math.abs(crankDelta) > Config.CRANK_THRESHOLD) {
+                    s.ngAnimPhase = "reverse";
+                    s.ngAnimTimer = 0;
+                    console.log('[Game] NG result dismissed → ng anim reverse');
+                }
+            } else if (s.ngAnimPhase === "done") {
+                // Fallback: dismiss immediately if animation already done
+                if (this.input.isAnyJustPressed() || Math.abs(crankDelta) > Config.CRANK_THRESHOLD) {
+                    s.showResult = false;
+                }
             }
         }
     }
@@ -634,17 +940,27 @@ class Game {
     _updateClearAnimation() {
         const s = this.state;
         s.clearAnimTimer++;
-        if (s.clearAnimTimer >= Config.CHECK_FRAME_INTERVAL) {
+        if (s.clearAnimTimer >= Config.CLEAR_ANIM_FRAME_INTERVAL) {
             s.clearAnimTimer = 0;
             s.clearAnimFrame++;
+            s.showCheckBlackFrame = true;
 
             if (s.clearAnimFrame >= s.frameCount) {
                 s.clearAnimFrame = 0;
                 s.clearAnimLoopCount++;
 
-                if (s.clearAnimLoopCount >= 2) {
+                if (s.clearAnimLoopCount >= Config.CLEAR_ANIM_LOOPS) {
                     s.isPlayingClearAnim = false;
+                    s.celebrationTitleShown = false;
                 }
+            }
+        }
+
+        // Allow early exit
+        if (s.clearAnimTimer > 0 || s.clearAnimFrame > 0 || s.clearAnimLoopCount > 0) {
+            if (this.input.isCheckJustPressed() || this.input.isPauseJustPressed()) {
+                s.isPlayingClearAnim = false;
+                s.celebrationTitleShown = false;
             }
         }
     }
@@ -667,54 +983,313 @@ class Game {
 
     _updateTutorialOverlay(crankDelta) {
         const t = this.tutorial;
-        if (t.step < 1 || t.step > 4) return;
 
+        // Prompt floating animation
         if (t.overlayVisible) {
-            const crankMoved = Math.abs(crankDelta) > Config.CRANK_THRESHOLD;
-            const anyKey = this.input.isAnyJustPressed();
+            t.promptAnimTime += 0.1;
+        }
 
-            let shouldClose = false;
-            if (t.step === 1) {
-                shouldClose = crankMoved;
-            } else {
-                shouldClose = anyKey || crankMoved;
-            }
-
-            if (shouldClose) {
-                t.overlayVisible = false;
-                t.idleTimer = 0;
-            }
-        } else {
-            if (this._isBlocked()) {
-                t.idleTimer = 0;
-            } else if (Math.abs(crankDelta) > Config.CRANK_THRESHOLD) {
-                t.idleTimer = 0;
-            } else {
-                t.idleTimer++;
-                if (t.idleTimer >= Config.TUTORIAL_IDLE_THRESHOLD) {
-                    t.overlayVisible = true;
+        // Stop overlay pending (delay before showing)
+        if (t.overlayPending) {
+            t.overlayDelayTimer++;
+            if (t.overlayDelayTimer >= Config.TUTORIAL_OVERLAY_DELAY) {
+                t.overlayPending = false;
+                t.overlayVisible = true;
+                console.log(`[Tutorial] Overlay shown (step=${t.step}, type=${t.overlayType})`);
+                this.sound.playNG(null); // Modal appear sound (umyounyo.wav)
+                // Good animation: start forward on group start (step 1, 5) or first game hint
+                const isGroupStart = (t.step === 1 || t.step === 5);
+                if (isGroupStart || t.showingFirstGameHint) {
+                    t.goodAnimFrame = 0;
+                    t.goodAnimTimer = 0;
+                    t.goodAnimPhase = "forward";
+                    console.log(`[Tutorial] Good anim → forward (step=${t.step})`);
                 }
             }
+            return;
+        }
+
+        // Tutorial good animation update
+        this._updateTutorialGoodAnim();
+
+        // First game hint
+        if (t.showingFirstGameHint) {
+            if (t.overlayVisible && this.input.isCheckJustPressed()) {
+                console.log('[Tutorial] First game hint dismissed');
+                t.overlayVisible = false;
+                t.showingFirstGameHint = false;
+                // Good animation: reverse (exit)
+                t.goodAnimTimer = 0;
+                t.goodAnimPhase = "reverse";
+                console.log('[Tutorial] Good anim → reverse (hint dismissed)');
+                this.sound.playSelected();
+                this.state.shownFirstGameHint = true;
+                this.state.saveSettings();
+            }
+            return;
+        }
+
+        if (!t.isTutorialStage || t.step < 1 || t.step > Config.TUTORIAL_TOTAL_STEPS) return;
+
+        const stepType = Config.TUTORIAL_STEP_TYPE[t.step];
+
+        if (stepType === "stop") {
+            // Stop: only Enter (A) dismisses
+            if (t.overlayVisible && this.input.isCheckJustPressed()) {
+                this._tutorialEnterStep(t.step + 1);
+            }
+            return;
+        }
+
+        // Interactive steps
+        if (t.step === 4) {
+            // Step 4: crank indicator delay timer
+            if (t.crankIndicatorDelayTimer < Config.TUTORIAL_CRANK_INDICATOR_DELAY) {
+                t.crankIndicatorDelayTimer++;
+            }
+            return;
+        }
+
+        if (t.step === 8) {
+            // Step 8: idle shows overlay, auto-hide after duration
+            if (t.overlayVisible) {
+                t.step8DisplayTimer++;
+                if (t.step8DisplayTimer >= Config.TUTORIAL_INTERACTIVE_DISPLAY_DURATION) {
+                    t.overlayVisible = false;
+                    t.idleTimer = 0;
+                }
+            } else {
+                if (this._isBlocked()) {
+                    t.idleTimer = 0;
+                } else if (Math.abs(crankDelta) > Config.CRANK_THRESHOLD) {
+                    t.idleTimer = 0;
+                } else {
+                    t.idleTimer++;
+                    if (t.idleTimer >= Config.TUTORIAL_IDLE_THRESHOLD) {
+                        t.overlayVisible = true;
+                        t.step8DisplayTimer = 0;
+                    }
+                }
+            }
+            return;
+        }
+
+        if (t.step === 9) {
+            // Step 9: hide when not grabbing or after duration
+            if (!this.state.isGrabbing) {
+                t.overlayVisible = false;
+            } else {
+                t.step9DisplayTimer++;
+                if (t.step9DisplayTimer >= Config.TUTORIAL_INTERACTIVE_DISPLAY_DURATION) {
+                    t.overlayVisible = false;
+                }
+            }
+            return;
+        }
+
+        if (t.step === 10) {
+            // Step 10: show only when correct order, auto-hide
+            if (!this.state.puzzle.isCorrectOrder()) {
+                t.overlayVisible = false;
+                t.idleTimer = 0;
+            } else if (t.overlayVisible) {
+                t.step10DisplayTimer++;
+                if (t.step10DisplayTimer >= Config.TUTORIAL_INTERACTIVE_DISPLAY_DURATION) {
+                    t.overlayVisible = false;
+                    t.idleTimer = 0;
+                }
+            } else {
+                if (this._isBlocked()) {
+                    t.idleTimer = 0;
+                } else if (Math.abs(crankDelta) > Config.CRANK_THRESHOLD) {
+                    t.idleTimer = 0;
+                } else {
+                    t.idleTimer++;
+                    if (t.idleTimer >= Config.TUTORIAL_CORRECT_IDLE_THRESHOLD) {
+                        t.overlayVisible = true;
+                        t.step10DisplayTimer = 0;
+                    }
+                }
+            }
+            return;
         }
     }
 
     updatePause() {
         const s = this.state;
 
+        // Secret combo tracking
+        this._updateSecretCombo();
+
         if (this.input.isPauseJustPressed()) {
-            s.togglePause();
+            // Check if secret combo ready
+            if (this.secretState.progress >= 8) {
+                s.isPaused = false;
+                s.totalPausedTime += performance.now() - s.pauseStartTime;
+                this._triggerSecretClear();
+            } else {
+                s.togglePause();
+                this.sound.unpauseBGM();
+            }
             return;
         }
 
         if (this.input.isCheckJustPressed() && s.isStageCleared(Config.TUTORIAL_STAGE_INDEX)) {
             s.isPaused = false;
+            this.sound.playBackToMenu();
             this.transition.start(
                 () => {
                     s.currentScene = Scene.SELECTION;
                     s.selectedIndex = s.lastSelectedStage;
+                    this.sound.playBGM('selection');
                 },
                 null
             );
+        }
+    }
+
+    _updateSecretCombo() {
+        if (!this.state.isPaused) return;
+
+        const SECRET_SEQUENCE = ["up", "up", "down", "down", "left", "right", "left", "right"];
+        const ss = this.secretState;
+        ss.frameCounter++;
+
+        // Timeout
+        if (ss.progress > 0 && (ss.frameCounter - ss.lastInputFrame) > Config.SECRET_COMBO_TIMEOUT) {
+            ss.progress = 0;
+        }
+
+        let dir = null;
+        if (this.input.isUpJustPressed()) dir = "up";
+        else if (this.input.isDownJustPressed()) dir = "down";
+        else if (this.input.isLeftJustPressed()) dir = "left";
+        else if (this.input.isRightJustPressed()) dir = "right";
+
+        if (!dir) return;
+
+        if (dir === SECRET_SEQUENCE[ss.progress]) {
+            ss.progress++;
+            ss.lastInputFrame = ss.frameCounter;
+        } else {
+            if (dir === SECRET_SEQUENCE[0]) {
+                ss.progress = 1;
+                ss.lastInputFrame = ss.frameCounter;
+            } else {
+                ss.progress = 0;
+            }
+        }
+    }
+
+    _triggerSecretClear() {
+        const s = this.state;
+        this.secretState.progress = 0;
+        console.log('[Game] Secret clear triggered!');
+
+        s.clearTime = performance.now() - s.startTime - s.totalPausedTime;
+        s.resultCorrect = true;
+        s.idleTimer = 0;
+        s.showHint = false;
+
+        s.isNewHiScore = s.setHiScore(s.stageIndex, s.clearTime);
+        this._startCelebration();
+    }
+
+    // --- Answer Animation Phase Updates ---
+    _updateAnswerAnimations() {
+        const s = this.state;
+        const frameCount = Config.ANSWER_ANIM_FRAME_COUNT;
+        const interval = Config.ANSWER_ANIM_FRAME_INTERVAL;
+
+        // Good animation (game result)
+        if (s.goodAnimPhase !== "done") {
+            s.goodAnimTimer++;
+            if (s.goodAnimPhase === "forward") {
+                if (s.goodAnimTimer >= interval) {
+                    s.goodAnimTimer = 0;
+                    if (s.goodAnimFrame < frameCount - 1) {
+                        s.goodAnimFrame++;
+                    } else {
+                        s.goodAnimPhase = "hold";
+                        console.log('[AnswerAnim] Good → hold');
+                    }
+                }
+            } else if (s.goodAnimPhase === "hold") {
+                if (s.goodAnimTimer >= Config.ANSWER_ANIM_HOLD_DURATION) {
+                    s.goodAnimTimer = 0;
+                    s.goodAnimPhase = "reverse";
+                    console.log('[AnswerAnim] Good → reverse');
+                }
+            } else if (s.goodAnimPhase === "reverse") {
+                if (s.goodAnimTimer >= interval) {
+                    s.goodAnimTimer = 0;
+                    if (s.goodAnimFrame > 0) {
+                        s.goodAnimFrame--;
+                    } else {
+                        s.goodAnimPhase = "done";
+                        console.log('[AnswerAnim] Good → done');
+                    }
+                }
+            }
+        }
+
+        // NG animation (game result)
+        if (s.ngAnimPhase !== "done") {
+            s.ngAnimTimer++;
+            if (s.ngAnimPhase === "forward") {
+                if (s.ngAnimTimer >= interval) {
+                    s.ngAnimTimer = 0;
+                    if (s.ngAnimFrame < frameCount - 1) {
+                        s.ngAnimFrame++;
+                    } else {
+                        s.ngAnimPhase = "hold";
+                        console.log('[AnswerAnim] NG → hold');
+                    }
+                }
+            } else if (s.ngAnimPhase === "reverse") {
+                if (s.ngAnimTimer >= interval) {
+                    s.ngAnimTimer = 0;
+                    if (s.ngAnimFrame > 0) {
+                        s.ngAnimFrame--;
+                    } else {
+                        s.ngAnimPhase = "done";
+                        s.showResult = false;
+                        console.log('[AnswerAnim] NG → done, result dismissed');
+                    }
+                }
+            }
+        }
+    }
+
+    // Tutorial good animation (separate from game good animation)
+    _updateTutorialGoodAnim() {
+        const t = this.tutorial;
+        if (t.goodAnimPhase === "hidden") return;
+
+        const frameCount = Config.ANSWER_ANIM_FRAME_COUNT;
+        const interval = Config.ANSWER_ANIM_FRAME_INTERVAL;
+
+        t.goodAnimTimer++;
+        if (t.goodAnimPhase === "forward") {
+            if (t.goodAnimTimer >= interval) {
+                t.goodAnimTimer = 0;
+                if (t.goodAnimFrame < frameCount - 1) {
+                    t.goodAnimFrame++;
+                } else {
+                    t.goodAnimPhase = "visible";
+                    console.log('[Tutorial] Good anim → visible');
+                }
+            }
+        } else if (t.goodAnimPhase === "reverse") {
+            if (t.goodAnimTimer >= interval) {
+                t.goodAnimTimer = 0;
+                if (t.goodAnimFrame > 0) {
+                    t.goodAnimFrame--;
+                } else {
+                    t.goodAnimPhase = "hidden";
+                    console.log('[Tutorial] Good anim → hidden');
+                }
+            }
         }
     }
 }
