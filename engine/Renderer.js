@@ -123,57 +123,69 @@ export class Renderer {
     // --- Selection Screen ---
     drawSelectionScreen(state, assets) {
         const ctx = this.ctx;
+        const W = Config.SCREEN_WIDTH;
+        const H = Config.SCREEN_HEIGHT;
         this.clear('#fff');
 
-        const COLS = Config.SELECTION_GRID_COLS;
-        const ROWS = Config.SELECTION_GRID_ROWS;
+        // Scrolling dot pattern background
+        const dotSpacing = Config.TITLE_BG_DOT_SPACING;
+        const dotRadius = Config.TITLE_BG_DOT_RADIUS;
+        const speed = Config.TITLE_BG_SCROLL_SPEED;
+        const scrollX = (state.frameCounter * speed) % dotSpacing;
+        const scrollY = (-state.frameCounter * speed) % dotSpacing;
+
+        ctx.fillStyle = '#000';
+        ctx.globalAlpha = 0.25;
+        for (let x = scrollX - dotSpacing; x <= W + dotSpacing; x += dotSpacing) {
+            for (let y = scrollY - dotSpacing; y <= H + dotSpacing; y += dotSpacing) {
+                ctx.beginPath();
+                ctx.arc(x + dotSpacing / 2, y + dotSpacing / 2, dotRadius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        ctx.globalAlpha = 1;
+
         const TILE = Config.SELECTION_TILE_SIZE;
         const SPACING = Config.SELECTION_TILE_SPACING;
-        const START_X = 7;
-        const START_Y = 12;
+        const BORDER = 4;
 
-        // Draw tiles (demo: only show stages defined in STAGES)
+        // Draw tiles (demo: centered horizontally)
         const stageCount = Config.STAGES.length;
-        for (let row = 0; row < ROWS; row++) {
-            for (let col = 0; col < COLS; col++) {
-                const index = row * COLS + col;
-                if (index >= stageCount) continue;
-                const x = START_X + col * (TILE + SPACING);
-                const y = START_Y + row * (TILE + SPACING);
+        const totalW = stageCount * TILE + (stageCount - 1) * SPACING;
+        const START_X = Math.floor((W - totalW) / 2);
+        const START_Y = Math.floor((H - TILE) / 2);
 
-                if (state.isStageCleared(index) && assets.getSelectionSprite(index)) {
-                    // Cleared: draw animated thumbnail
-                    const frameIdx = state.selectionAnimFrame || 0;
-                    assets.drawSelectionFrame(ctx, index, frameIdx % 9, x, y, TILE);
-                } else {
-                    // Uncleared or unavailable
-                    const stageInfo = Config.STAGES.find(s => s.index === index);
+        for (let i = 0; i < stageCount; i++) {
+            const index = i;
+            const x = START_X + i * (TILE + SPACING);
+            const y = START_Y;
 
-                    // Boss stage (27) special treatment
-                    if (index === 27) {
-                        this.fillRectDither(x, y, TILE, TILE, 0.25); // Darker
-                    } else {
-                        this.fillRectDither(x, y, TILE, TILE, 0.5);
-                    }
-
-                    // Letter
-                    ctx.fillStyle = '#fff';
-                    ctx.font = 'bold 18px monospace';
-                    let ch;
-                    if (index === 0 || index === 27) ch = '?';
-                    else if (index <= 26) ch = String.fromCharCode(64 + index);
-                    else ch = '?';
-
-                    const tw = ctx.measureText(ch).width;
-                    ctx.fillText(ch, x + (TILE - tw) / 2, y + TILE / 2 + 6);
+            const mainFrames = assets.getMainFrames(index);
+            if (state.isStageCleared(index) && mainFrames.length > 0) {
+                // Cleared: border + animated using main game frames
+                ctx.fillStyle = '#000';
+                ctx.fillRect(x - BORDER, y - BORDER, TILE + BORDER * 2, TILE + BORDER * 2);
+                const frameIdx = (state.selectionAnimFrame || 0) % mainFrames.length;
+                const img = mainFrames[frameIdx];
+                if (img && img.complete) {
+                    ctx.drawImage(img, x, y, TILE, TILE);
                 }
+            } else {
+                // Uncleared: solid gray tile with "?" mark
+                ctx.fillStyle = '#888';
+                ctx.fillRect(x, y, TILE, TILE);
+                ctx.fillStyle = '#fff';
+                ctx.font = `bold ${Math.floor(TILE * 0.7)}px monospace`;
+                const ch = '?';
+                const tw = ctx.measureText(ch).width;
+                ctx.fillText(ch, x + (TILE - tw) / 2, y + TILE * 0.72);
             }
         }
 
         // Draw cursor bracket (animated color cycle)
         const cursorCycle = Math.floor(state.frameCounter / 4) % 4;
         const cursorColors = ['#000', '#555', '#999', '#555'];
-        this._drawCursorBracket(state.selectedIndex, START_X, START_Y, TILE, SPACING, COLS, cursorColors[cursorCycle]);
+        this._drawCursorBracket(state.selectedIndex, START_X, START_Y, TILE, SPACING, stageCount, cursorColors[cursorCycle]);
 
         // Pause overlay
         if (state.isPaused) {
