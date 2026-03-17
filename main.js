@@ -188,35 +188,8 @@ class Game {
             if (ts.bgScrollY <= -spacing) ts.bgScrollY += spacing;
         }
 
-        // Menu navigation (left/right)
-        if (this.input.isRightJustPressed()) {
-            ts.selectedMenuIndex = (ts.selectedMenuIndex + 1) % 3;
-            ts.arrowAnimTime = 0;
-            ts.crankAccumulated = 0;
-            this.sound.playCursor();
-        } else if (this.input.isLeftJustPressed()) {
-            ts.selectedMenuIndex = (ts.selectedMenuIndex + 2) % 3;
-            ts.arrowAnimTime = 0;
-            ts.crankAccumulated = 0;
-            this.sound.playCursor();
-        }
-
-        // Crank-based menu navigation
-        const crankDelta = this.input.getCrankDelta();
-        if (crankDelta !== 0) {
-            ts.crankAccumulated += crankDelta;
-            if (ts.crankAccumulated >= Config.TITLE_MENU_CRANK_DEGREES) {
-                ts.selectedMenuIndex = (ts.selectedMenuIndex + 1) % 3;
-                ts.crankAccumulated = 0;
-                ts.arrowAnimTime = 0;
-                this.sound.playCursor();
-            } else if (ts.crankAccumulated <= -Config.TITLE_MENU_CRANK_DEGREES) {
-                ts.selectedMenuIndex = (ts.selectedMenuIndex + 2) % 3;
-                ts.crankAccumulated = 0;
-                ts.arrowAnimTime = 0;
-                this.sound.playCursor();
-            }
-        }
+        // Menu fixed to START GAME (demo version)
+        ts.selectedMenuIndex = 0;
 
         // Select menu item
         if (this.input.isCheckJustPressed()) {
@@ -231,7 +204,7 @@ class Game {
                         if (tutorialCleared) {
                             console.log('[Scene] Title → Selection');
                             this.state.currentScene = Scene.SELECTION;
-                            this.state.selectedIndex = this.state.lastSelectedStage;
+                            this.state.selectedIndex = Math.min(this.state.lastSelectedStage, Config.STAGES.length - 1);
                             this.sound.playBGM('selection');
                         } else {
                             console.log('[Scene] Title → Game (tutorial)');
@@ -271,33 +244,15 @@ class Game {
         }
 
         // Cursor movement
-        const cols = Config.SELECTION_GRID_COLS;
-        const rows = Config.SELECTION_GRID_ROWS;
-        let idx = this.state.selectedIndex;
+        const stageCount = Config.STAGES.length;
+        let idx = Math.min(this.state.selectedIndex, stageCount - 1);
         let moved = false;
-
         if (this.input.isLeftJustPressed()) {
-            const col = idx % cols;
-            const row = Math.floor(idx / cols);
-            idx = row * cols + ((col - 1 + cols) % cols);
+            idx = (idx - 1 + stageCount) % stageCount;
             moved = true;
         }
         if (this.input.isRightJustPressed()) {
-            const col = idx % cols;
-            const row = Math.floor(idx / cols);
-            idx = row * cols + ((col + 1) % cols);
-            moved = true;
-        }
-        if (this.input.isUpJustPressed()) {
-            const col = idx % cols;
-            const row = Math.floor(idx / cols);
-            idx = ((row - 1 + rows) % rows) * cols + col;
-            moved = true;
-        }
-        if (this.input.isDownJustPressed()) {
-            const col = idx % cols;
-            const row = Math.floor(idx / cols);
-            idx = ((row + 1) % rows) * cols + col;
+            idx = (idx + 1) % stageCount;
             moved = true;
         }
 
@@ -499,6 +454,16 @@ class Game {
         // Celebration update
         if (state.isCelebrating) {
             this._updateCelebration();
+            // Allow skipping celebration with Enter or Esc
+            if (this.input.isCheckJustPressed() || this.input.isPauseJustPressed()) {
+                state.isCelebrating = false;
+                state.celebrationParticles = [];
+                state.showResult = true;
+                state.resultAnimTime = 0;
+                state.goodAnimFrame = 0;
+                state.goodAnimTimer = 0;
+                state.goodAnimPhase = "forward";
+            }
             return;
         }
 
@@ -529,7 +494,6 @@ class Game {
         // Slide animation
         if (state.isSliding) {
             this._updateSlideAnimation();
-            return;
         }
 
         // Place animation
@@ -556,18 +520,28 @@ class Game {
             this.sound.playRelease();
         }
 
-        // Frame movement from crank
+        // Flip cooldown timer
+        if (state.flipCooldown > 0) state.flipCooldown--;
+
+        // Frame movement: instant flip on key press, crank for analog input
         if (!this._isCrankBlocked() && !this._isTutorialCrankBlocked()) {
-            this._processFrameMovement(crankDelta);
+            if (this.input.isRightJustPressed() && state.flipCooldown <= 0) {
+                this._flipFrame(1);
+            } else if (this.input.isLeftJustPressed() && state.flipCooldown <= 0) {
+                this._flipFrame(-1);
+            } else if (!state.isSliding) {
+                this._processFrameMovement(crankDelta);
+            }
         }
 
         // Check answer (Enter / A button)
         if (this.input.isCheckJustPressed() && !this._isBlocked() && !this._isTutorialCheckBlocked()) {
-            // Don't check if tutorial stop overlay is active
-            if (!this._isTutorialStopOverlayActive()) {
+            // Don't check if tutorial stop overlay is active or hint was just dismissed this frame
+            if (!this._isTutorialStopOverlayActive() && !this.tutorial.hintJustDismissed) {
                 this._startCheck();
             }
         }
+        this.tutorial.hintJustDismissed = false;
 
         // Pause (Esc / B button)
         if (this.input.isPauseJustPressed() && !this._isBlocked() && !this._isTutorialStopOverlayActive()) {
@@ -594,7 +568,7 @@ class Game {
         if (this._isTutorialStopOverlayActive()) return true;
         if (this._isTutorialCrankBlocked()) return true;
         return s.isPlacing || s.isChecking || s.isWaitingResult || s.showResult ||
-               s.isSliding || s.isPaused || s.isPlayingClearAnim || s.isCelebrating;
+               s.isPaused || s.isPlayingClearAnim || s.isCelebrating;
     }
 
     _updateCrankSmoothing(crankDelta) {
@@ -613,6 +587,38 @@ class Game {
         }
         if (wasIdle && !s.isCrankIdle) {
             s.isQuickStarting = true;
+        }
+    }
+
+    _flipFrame(direction) {
+        const s = this.state;
+        const count = s.puzzle.getCurrentCount();
+        if (count === 0) return;
+
+        // Cancel current slide if still running
+        if (s.isSliding) {
+            s.isSliding = false;
+            s.slideProgress = 1;
+        }
+
+        const prevImg = s.puzzle.getFrameAt(s.currentFrameIndex);
+        s.currentFrameIndex = (s.currentFrameIndex + direction + count) % count;
+        s.accumulatedAngle = 0;
+        s.flipCooldown = Config.FLIP_COOLDOWN_FRAMES;
+
+        this._startSlide(direction, prevImg);
+        if (direction > 0) {
+            this.sound.playFlip();
+        } else {
+            this.sound.playFlipBack();
+        }
+
+        // Tutorial: track frame changes for Step 4
+        if (this.tutorial.isTutorialStage && this.tutorial.step === 4) {
+            this.tutorial.framesRotatedCount++;
+            if (this.tutorial.framesRotatedCount >= Config.TUTORIAL_CRANK_FRAMES_REQUIRED) {
+                this._tutorialEnterStep(5);
+            }
         }
     }
 
@@ -886,6 +892,10 @@ class Game {
             s.celebrationParticles = [];
             s.showResult = true;
             s.resultAnimTime = 0;
+            // Restart good animation for result screen
+            s.goodAnimFrame = 0;
+            s.goodAnimTimer = 0;
+            s.goodAnimPhase = "forward";
         }
     }
 
@@ -907,18 +917,20 @@ class Game {
                 this.transition.start(
                     () => {
                         s.currentScene = Scene.SELECTION;
-                        s.selectedIndex = s.lastSelectedStage;
+                        s.selectedIndex = Math.min(s.lastSelectedStage, Config.STAGES.length - 1);
                         this.sound.playBGM('selection');
                     },
                     null
                 );
             } else if (this.input.isPauseJustPressed()) {
                 // Replay clear animation
+                s.showResult = false;
                 s.isPlayingClearAnim = true;
                 s.clearAnimFrame = 0;
                 s.clearAnimTimer = 0;
                 s.clearAnimLoopCount = 0;
                 s.celebrationTitleShown = true;
+                this.sound.playAnswer(s.stageIndex);
             }
         } else {
             // NG: any input triggers reverse animation (which dismisses on completion)
@@ -952,6 +964,11 @@ class Game {
                 if (s.clearAnimLoopCount >= Config.CLEAR_ANIM_LOOPS) {
                     s.isPlayingClearAnim = false;
                     s.celebrationTitleShown = false;
+                    s.showResult = true;
+                    s.goodAnimFrame = 0;
+                    s.goodAnimTimer = 0;
+                    s.goodAnimPhase = "forward";
+                    this.sound.playOK(true);
                 }
             }
         }
@@ -967,7 +984,7 @@ class Game {
 
     _updateIdleHint(crankDelta) {
         const s = this.state;
-        if (Math.abs(crankDelta) > Config.CRANK_THRESHOLD) {
+        if (Math.abs(crankDelta) > Config.CRANK_THRESHOLD || this.input.isLeftJustPressed() || this.input.isRightJustPressed()) {
             s.idleTimer = 0;
             s.showHint = false;
         } else if (this._isBlocked()) {
@@ -1018,6 +1035,7 @@ class Game {
                 console.log('[Tutorial] First game hint dismissed');
                 t.overlayVisible = false;
                 t.showingFirstGameHint = false;
+                t.hintJustDismissed = true;
                 // Good animation: reverse (exit)
                 t.goodAnimTimer = 0;
                 t.goodAnimPhase = "reverse";
@@ -1061,7 +1079,7 @@ class Game {
             } else {
                 if (this._isBlocked()) {
                     t.idleTimer = 0;
-                } else if (Math.abs(crankDelta) > Config.CRANK_THRESHOLD) {
+                } else if (Math.abs(crankDelta) > Config.CRANK_THRESHOLD || this.input.isLeftJustPressed() || this.input.isRightJustPressed()) {
                     t.idleTimer = 0;
                 } else {
                     t.idleTimer++;
@@ -1140,7 +1158,7 @@ class Game {
             this.transition.start(
                 () => {
                     s.currentScene = Scene.SELECTION;
-                    s.selectedIndex = s.lastSelectedStage;
+                    s.selectedIndex = Math.min(s.lastSelectedStage, Config.STAGES.length - 1);
                     this.sound.playBGM('selection');
                 },
                 null

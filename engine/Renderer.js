@@ -63,9 +63,8 @@ export class Renderer {
             }
         }
 
-        // Menu item text (centered at TITLE_MENU_Y)
-        const MENU_ITEMS = ['START GAME', 'SETTINGS', 'CREDITS'];
-        const menuText = MENU_ITEMS[titleState.selectedMenuIndex];
+        // Menu item text (demo: START GAME only)
+        const menuText = 'START GAME';
         ctx.save();
         ctx.textBaseline = 'top';
         ctx.fillStyle = '#000';
@@ -76,35 +75,33 @@ export class Renderer {
         const menuHeight = 20;
         ctx.fillText(menuText, menuX, menuY);
 
-        // 3D rotating arrows flanking menu text
+        // Arrows pointing inward toward START GAME
         const triSize = Config.TITLE_MENU_ARROW_SIZE;
         const triGap = Config.TITLE_MENU_ARROW_GAP;
         const triCenterY = menuY + menuHeight / 2;
         const scale = Math.abs(Math.cos(titleState.arrowAnimTime * Config.TITLE_MENU_ARROW_SPEED));
         const scaledHeight = triSize * scale;
 
-        ctx.textBaseline = 'alphabetic';
-
-        // Left arrow
+        // Left arrow (pointing right → toward text)
         const lx = menuX - triGap - triSize;
         if (scaledHeight > 1) {
             ctx.beginPath();
-            ctx.moveTo(lx + triSize, triCenterY - scaledHeight);
-            ctx.lineTo(lx, triCenterY);
-            ctx.lineTo(lx + triSize, triCenterY + scaledHeight);
+            ctx.moveTo(lx, triCenterY - scaledHeight);
+            ctx.lineTo(lx + triSize, triCenterY);
+            ctx.lineTo(lx, triCenterY + scaledHeight);
             ctx.closePath();
             ctx.fill();
         } else {
             ctx.fillRect(lx, triCenterY - 0.5, triSize, 1);
         }
 
-        // Right arrow
+        // Right arrow (pointing left ← toward text)
         const rx = menuX + menuWidth + triGap;
         if (scaledHeight > 1) {
             ctx.beginPath();
-            ctx.moveTo(rx, triCenterY - scaledHeight);
-            ctx.lineTo(rx + triSize, triCenterY);
-            ctx.lineTo(rx, triCenterY + scaledHeight);
+            ctx.moveTo(rx + triSize, triCenterY - scaledHeight);
+            ctx.lineTo(rx, triCenterY);
+            ctx.lineTo(rx + triSize, triCenterY + scaledHeight);
             ctx.closePath();
             ctx.fill();
         } else {
@@ -126,55 +123,74 @@ export class Renderer {
     // --- Selection Screen ---
     drawSelectionScreen(state, assets) {
         const ctx = this.ctx;
+        const W = Config.SCREEN_WIDTH;
+        const H = Config.SCREEN_HEIGHT;
         this.clear('#fff');
 
-        const COLS = Config.SELECTION_GRID_COLS;
-        const ROWS = Config.SELECTION_GRID_ROWS;
+        // Scrolling dot pattern background
+        const dotSpacing = Config.TITLE_BG_DOT_SPACING;
+        const dotRadius = Config.TITLE_BG_DOT_RADIUS;
+        const speed = Config.TITLE_BG_SCROLL_SPEED;
+        const scrollX = (state.frameCounter * speed) % dotSpacing;
+        const scrollY = (-state.frameCounter * speed) % dotSpacing;
+
+        ctx.fillStyle = '#000';
+        ctx.globalAlpha = 0.25;
+        for (let x = scrollX - dotSpacing; x <= W + dotSpacing; x += dotSpacing) {
+            for (let y = scrollY - dotSpacing; y <= H + dotSpacing; y += dotSpacing) {
+                ctx.beginPath();
+                ctx.arc(x + dotSpacing / 2, y + dotSpacing / 2, dotRadius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        ctx.globalAlpha = 1;
+
         const TILE = Config.SELECTION_TILE_SIZE;
         const SPACING = Config.SELECTION_TILE_SPACING;
-        const START_X = 7;
-        const START_Y = 12;
+        const BORDER = Config.SELECTION_TILE_BORDER;
 
-        // Draw tiles
-        for (let row = 0; row < ROWS; row++) {
-            for (let col = 0; col < COLS; col++) {
-                const index = row * COLS + col;
-                const x = START_X + col * (TILE + SPACING);
-                const y = START_Y + row * (TILE + SPACING);
+        // Draw tiles (demo: centered horizontally)
+        const stageCount = Config.STAGES.length;
+        const totalW = stageCount * TILE + (stageCount - 1) * SPACING;
+        const START_X = Math.floor((W - totalW) / 2);
+        const START_Y = Math.floor((H - TILE) / 2);
 
-                if (state.isStageCleared(index) && assets.getSelectionSprite(index)) {
-                    // Cleared: draw animated thumbnail
-                    const frameIdx = state.selectionAnimFrame || 0;
-                    assets.drawSelectionFrame(ctx, index, frameIdx % 9, x, y, TILE);
+        for (let i = 0; i < stageCount; i++) {
+            const stage = Config.STAGES[i];
+            const index = stage.index;
+            const x = START_X + i * (TILE + SPACING);
+            const y = START_Y;
+
+            const mainFrames = assets.getMainFrames(index);
+            if (state.isStageCleared(index) && mainFrames.length > 0) {
+                // Cleared: border + animated using main game frames
+                ctx.fillStyle = '#000';
+                ctx.fillRect(x - BORDER, y - BORDER, TILE + BORDER * 2, TILE + BORDER * 2);
+                const frameIdx = (state.selectionAnimFrame || 0) % mainFrames.length;
+                const img = mainFrames[frameIdx];
+                if (img && img.complete) {
+                    ctx.drawImage(img, x, y, TILE, TILE);
                 } else {
-                    // Uncleared or unavailable
-                    const stageInfo = Config.STAGES.find(s => s.index === index);
-
-                    // Boss stage (27) special treatment
-                    if (index === 27) {
-                        this.fillRectDither(x, y, TILE, TILE, 0.25); // Darker
-                    } else {
-                        this.fillRectDither(x, y, TILE, TILE, 0.5);
-                    }
-
-                    // Letter
+                    // Fallback while image is loading
                     ctx.fillStyle = '#fff';
-                    ctx.font = 'bold 18px monospace';
-                    let ch;
-                    if (index === 0 || index === 27) ch = '?';
-                    else if (index <= 26) ch = String.fromCharCode(64 + index);
-                    else ch = '?';
-
-                    const tw = ctx.measureText(ch).width;
-                    ctx.fillText(ch, x + (TILE - tw) / 2, y + TILE / 2 + 6);
+                    ctx.fillRect(x, y, TILE, TILE);
                 }
+            } else {
+                // Uncleared: solid gray tile with "?" mark
+                ctx.fillStyle = '#888';
+                ctx.fillRect(x, y, TILE, TILE);
+                ctx.fillStyle = '#fff';
+                ctx.font = `bold ${Math.floor(TILE * 0.7)}px monospace`;
+                const ch = '?';
+                const tw = ctx.measureText(ch).width;
+                ctx.fillText(ch, x + (TILE - tw) / 2, y + TILE * 0.72);
             }
         }
 
         // Draw cursor bracket (animated color cycle)
         const cursorCycle = Math.floor(state.frameCounter / 4) % 4;
         const cursorColors = ['#000', '#555', '#999', '#555'];
-        this._drawCursorBracket(state.selectedIndex, START_X, START_Y, TILE, SPACING, COLS, cursorColors[cursorCycle]);
+        this._drawCursorBracket(state.selectedIndex, START_X, START_Y, TILE, SPACING, stageCount, cursorColors[cursorCycle]);
 
         // Pause overlay
         if (state.isPaused) {
@@ -189,9 +205,9 @@ export class Renderer {
         const tileX = startX + col * (tileSize + spacing);
         const tileY = startY + row * (tileSize + spacing);
 
-        const frameSize = Config.SELECTION_FRAME_SIZE;
-        const cornerLen = Config.SELECTION_FRAME_CORNER_LENGTH;
-        const cornerW = Config.SELECTION_FRAME_CORNER_WIDTH;
+        const frameSize = Config.SELECTION_CURSOR_SIZE;
+        const cornerLen = Config.SELECTION_CURSOR_CORNER_LENGTH;
+        const cornerW = Config.SELECTION_CURSOR_CORNER_WIDTH;
 
         const fx = tileX - (frameSize - tileSize) / 2;
         const fy = tileY - (frameSize - tileSize) / 2;
@@ -242,12 +258,12 @@ export class Renderer {
         const cleared = Object.keys(state.hiScores).length;
         ctx.fillStyle = '#000';
         ctx.font = 'bold 24px monospace';
-        const progText = `${cleared}/${Config.TOTAL_STAGES}`;
+        const progText = `${cleared}/${Config.STAGES.length}`;
         const progW = ctx.measureText(progText).width;
         ctx.fillText(progText, (W - progW) / 2, 92);
 
         // Percent
-        const pct = ((cleared / Config.TOTAL_STAGES) * 100).toFixed(1);
+        const pct = ((cleared / Config.STAGES.length) * 100).toFixed(1);
         ctx.font = '16px monospace';
         const pctText = `${pct}%`;
         const pctW = ctx.measureText(pctText).width;
@@ -279,14 +295,15 @@ export class Renderer {
         } else if (state.isChecking) {
             // Check animation
             const frameIdx = state.checkAnimFrame % state.frameCount;
+            const img = frames[frameIdx];
+            if (img && img.complete) {
+                ctx.drawImage(img, imgX, imgY, displaySize, displaySize);
+            }
             if (state.checkAnimFrame % 2 === 1) {
+                ctx.globalAlpha = Config.CHECK_FLASH_ALPHA;
                 ctx.fillStyle = '#000';
-                ctx.fillRect(imgX, imgY, displaySize, displaySize);
-            } else {
-                const img = frames[frameIdx];
-                if (img && img.complete) {
-                    ctx.drawImage(img, imgX, imgY, displaySize, displaySize);
-                }
+                ctx.fillRect(0, 0, Config.SCREEN_WIDTH, Config.SCREEN_HEIGHT);
+                ctx.globalAlpha = 1;
             }
         } else if (state.isPlayingClearAnim) {
             const frameIdx = state.clearAnimFrame % state.frameCount;
@@ -326,15 +343,36 @@ export class Renderer {
             this._drawRewindIcon();
         }
 
-        // Hint
+        // Hint (left: grab/check, right: flip keys)
         if (state.showHint && !state.isGrabbing && !state.isPlacing && !state.isPaused &&
             !state.showResult && !state.isCelebrating) {
-            this._drawHint(state);
+            const tutorialGrabLocked = tutorial && tutorial.isTutorialStage && tutorial.step < Config.TUTORIAL_DPAD_UNLOCK_STEP;
+            if (!tutorialGrabLocked) {
+                this._drawHint(state);
+            }
+            this._drawFlipKeyHint();
         }
 
         // Celebration overlay
         if (state.isCelebrating) {
             this._drawCelebration(state);
+        }
+
+        // Animation name during clear replay
+        if (state.isPlayingClearAnim && state.celebrationTitleShown && state.currentAnimationName) {
+            const name = state.currentAnimationName;
+            ctx.font = 'bold 24px monospace';
+            const textW = ctx.measureText(name).width;
+            const padX = Config.CELEBRATION_TITLE_PAD_X;
+            const padY = Config.CELEBRATION_TITLE_PAD_Y;
+            const bgW = textW + padX * 2;
+            const bgH = 30 + padY * 2;
+            const bgX = (Config.SCREEN_WIDTH - bgW) / 2;
+            const bgY = Config.SCREEN_HEIGHT - bgH + Config.PAUSE_LABEL_OFFSET_Y;
+            ctx.fillStyle = '#000';
+            ctx.fillRect(bgX, bgY, bgW, bgH);
+            ctx.fillStyle = '#fff';
+            ctx.fillText(name, bgX + padX, bgY + padY + 22);
         }
 
         // Pause overlay
@@ -455,10 +493,9 @@ export class Renderer {
             const currentHeight = H * scaleY;
             const slideY = H / 2 - currentHeight / 2;
 
-            // Draw current frame behind
-            const curImgIdx = state.puzzle.getFrameAt(state.currentFrameIndex);
-            if (curImgIdx !== undefined && frames[curImgIdx] && frames[curImgIdx].complete) {
-                ctx.drawImage(frames[curImgIdx], imgX, imgY, displaySize, displaySize);
+            // Draw previous frame behind (the page that was showing before)
+            if (state.slidePrevImage !== undefined && frames[state.slidePrevImage] && frames[state.slidePrevImage].complete) {
+                ctx.drawImage(frames[state.slidePrevImage], imgX, imgY, displaySize, displaySize);
             }
 
             // Shadow
@@ -467,7 +504,7 @@ export class Renderer {
                 this.fillRectDither(slideRight, slideY, sw, currentHeight, shadowAlpha);
             }
 
-            // Old frame sliding in
+            // New frame sliding in (the page we're going back to)
             const clipLeft = Math.max(0, slideX);
             const clipWidth = slideRight - clipLeft;
             if (clipWidth > 0) {
@@ -494,10 +531,11 @@ export class Renderer {
                     ctx.fillRect(slideX + W - segEdgeWidth, segY, segEdgeWidth, segmentHeight + 1);
                 }
 
-                if (state.slidePrevImage !== undefined && frames[state.slidePrevImage] && frames[state.slidePrevImage].complete) {
+                const curImgIdx = state.puzzle.getFrameAt(state.currentFrameIndex);
+                if (curImgIdx !== undefined && frames[curImgIdx] && frames[curImgIdx].complete) {
                     const imgScaledH = displaySize * scaleY;
                     const imgDrawY = slideY + (currentHeight - imgScaledH) / 2;
-                    ctx.drawImage(frames[state.slidePrevImage], slideX + imgX, imgDrawY, displaySize, imgScaledH);
+                    ctx.drawImage(frames[curImgIdx], slideX + imgX, imgDrawY, displaySize, imgScaledH);
                 }
 
                 ctx.restore();
@@ -513,7 +551,7 @@ export class Renderer {
         const img = frames[state.grabbedFrame];
         if (!img || !img.complete) return;
 
-        const THUMBNAIL_SCALE = Config.IMAGE_SIZE / W; // ~0.3
+        const THUMBNAIL_SCALE = Config.THUMBNAIL_SCALE;
 
         const t = easeOutQuad(state.grabAnimProgress);
         const currentX = Config.THUMBNAIL_X * t;
@@ -566,7 +604,7 @@ export class Renderer {
         const img = frames[state.placingFrame];
         if (!img || !img.complete) return;
 
-        const THUMBNAIL_SCALE = Config.IMAGE_SIZE / W;
+        const THUMBNAIL_SCALE = Config.THUMBNAIL_SCALE;
 
         const t = easeOutQuad(state.placeAnimProgress);
         const currentX = Config.THUMBNAIL_X + (0 - Config.THUMBNAIL_X) * t;
@@ -717,13 +755,16 @@ export class Renderer {
 
     _drawHint(state) {
         const ctx = this.ctx;
+        const H = Config.SCREEN_HEIGHT;
         ctx.fillStyle = '#000';
-        ctx.font = '12px monospace';
+        ctx.font = `${Config.HINT_FONT_SIZE}px monospace`;
 
-        // Line 1: grab hint
-        ctx.fillText('[Space] grab', Config.HINT_LINE1_X, Config.HINT_LINE1_Y);
-        // Line 2: check hint
-        ctx.fillText('[Enter] check', Config.HINT_LINE2_X, Config.HINT_LINE2_Y);
+        const lh = Config.HINT_LINE_HEIGHT;
+        const x = Config.HINT_MARGIN_X;
+        const y = H - Config.HINT_MARGIN_BOTTOM - lh;
+
+        ctx.fillText('[Space] grab', x, y);
+        ctx.fillText('[Enter] check', x, y + lh);
     }
 
     // --- Celebration (confetti + title) ---
@@ -803,10 +844,10 @@ export class Renderer {
         const timeText = state.formatTime(safeTime);
         ctx.fillStyle = '#000';
         ctx.globalAlpha = 0.5;
-        ctx.font = 'bold 48px monospace';
+        ctx.font = `bold ${Config.PAUSE_TIME_FONT_SIZE}px monospace`;
         const timeW = ctx.measureText(timeText).width;
         const timeX = Math.floor((W - timeW) / 2);
-        const timeY = innerY + Config.PAUSE_TIME_TOP_MARGIN + 50;
+        const timeY = innerY + Config.PAUSE_TIME_TOP_MARGIN;
         ctx.fillText(timeText, timeX, timeY);
         ctx.globalAlpha = 1;
 
@@ -936,10 +977,10 @@ export class Renderer {
         const timeText = state.formatTime(state.getElapsedTime());
         ctx.fillStyle = '#000';
         ctx.globalAlpha = 0.5;
-        ctx.font = 'bold 48px monospace';
+        ctx.font = `bold ${Config.PAUSE_TIME_FONT_SIZE}px monospace`;
         const timeW = ctx.measureText(timeText).width;
         const timeX = Math.floor((W - timeW) / 2);
-        const timeY = innerY + Config.PAUSE_TIME_TOP_MARGIN + 50;
+        const timeY = innerY + Config.PAUSE_TIME_TOP_MARGIN;
         ctx.fillText(timeText, timeX, timeY);
         ctx.globalAlpha = 1;
 
@@ -1024,10 +1065,10 @@ export class Renderer {
             return;
         }
 
-        // Step 4: crank indicator only (no text overlay)
+        // Step 4: no text overlay, but force flip key hint to be visible
         if (tutorial.isTutorialStage && tutorial.step === 4) {
             if (tutorial.crankIndicatorDelayTimer >= Config.TUTORIAL_CRANK_INDICATOR_DELAY) {
-                this._drawCrankIndicator();
+                this._drawFlipKeyHint();
             }
             return;
         }
@@ -1071,20 +1112,20 @@ export class Renderer {
         const textData = Config.TUTORIAL_STEP_TEXT[tutorial.step];
         if (textData) {
             const innerW = overlayW - border * 2;
-            const lineHeight = 24;
-            const lineGap = 4;
+            const lineHeight = 36;
+            const lineGap = 6;
             const lineCount = textData[1] ? 2 : 1;
             const totalTextH = lineCount * lineHeight + (lineCount - 1) * lineGap;
             const promptH = tutorial.overlayType === "stop" ? 30 : 0;
             const innerH = overlayH - border * 2;
             const baseY = oy + border + (innerH - totalTextH - promptH) / 2;
 
-            ctx.font = '16px monospace';
+            ctx.font = '24px monospace';
             const w1 = ctx.measureText(textData[0]).width;
-            ctx.fillText(textData[0], ox + border + (innerW - w1) / 2, baseY + 14);
+            ctx.fillText(textData[0], ox + border + (innerW - w1) / 2, baseY + 21);
             if (textData[1]) {
                 const w2 = ctx.measureText(textData[1]).width;
-                ctx.fillText(textData[1], ox + border + (innerW - w2) / 2, baseY + lineHeight + lineGap + 14);
+                ctx.fillText(textData[1], ox + border + (innerW - w2) / 2, baseY + lineHeight + lineGap + 21);
             }
         }
 
@@ -1136,21 +1177,21 @@ export class Renderer {
 
         // Text
         ctx.fillStyle = '#000';
-        ctx.font = '16px monospace';
+        ctx.font = '24px monospace';
         const textData = Config.FIRST_GAME_HINT_TEXT;
         const innerW = overlayW - border * 2;
         const innerH = overlayH - border * 2;
-        const lineHeight = 24;
-        const lineGap = 4;
+        const lineHeight = 36;
+        const lineGap = 6;
         const totalTextH = lineHeight * 2 + lineGap;
         const promptH = 30;
         const baseY = oy + border + (innerH - totalTextH - promptH) / 2;
 
         const w1 = ctx.measureText(textData[0]).width;
-        ctx.fillText(textData[0], ox + border + (innerW - w1) / 2, baseY + 14);
+        ctx.fillText(textData[0], ox + border + (innerW - w1) / 2, baseY + 21);
         if (textData[1]) {
             const w2 = ctx.measureText(textData[1]).width;
-            ctx.fillText(textData[1], ox + border + (innerW - w2) / 2, baseY + lineHeight + lineGap + 14);
+            ctx.fillText(textData[1], ox + border + (innerW - w2) / 2, baseY + lineHeight + lineGap + 21);
         }
 
         // "PRESS [Enter]" prompt
@@ -1162,20 +1203,21 @@ export class Renderer {
         ctx.fillText(promptText, ox + border + (innerW - promptWidth) / 2, promptBaseY + floatOffset);
     }
 
-    _drawCrankIndicator() {
+    _drawFlipKeyHint() {
         const ctx = this.ctx;
         const W = Config.SCREEN_WIDTH;
         const H = Config.SCREEN_HEIGHT;
 
-        // Simple crank indicator (arrows showing rotation)
-        const cx = W / 2;
-        const cy = H - 40;
-
+        // Key hint at bottom-right
         ctx.fillStyle = '#000';
-        ctx.font = '14px monospace';
-        const text = '<< Rotate >>';
-        const tw = ctx.measureText(text).width;
-        ctx.fillText(text, cx - tw / 2, cy);
+        ctx.font = `${Config.HINT_FONT_SIZE}px monospace`;
+        const line1 = '[Right key] next';
+        const line2 = '[Left  key] back';
+        const lh = Config.HINT_LINE_HEIGHT;
+        const x = W - Math.max(ctx.measureText(line1).width, ctx.measureText(line2).width) - Config.HINT_MARGIN_X;
+        const y = H - Config.HINT_MARGIN_BOTTOM - lh;
+        ctx.fillText(line1, x, y);
+        ctx.fillText(line2, x, y + lh);
     }
 
     // --- Transition ---

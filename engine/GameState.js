@@ -79,6 +79,7 @@ export class GameState {
         this.isCrankIdle = true;
         this.isQuickStarting = false;
         this.accumulatedAngle = 0;
+        this.flipCooldown = 0;
         this.crankDeltaHistory = new Array(Config.CRANK_HISTORY_SIZE).fill(0);
         this.crankHistoryIndex = 0;
         this.crankHistorySum = 0;
@@ -201,6 +202,7 @@ export class GameState {
 
         // Crank reset
         this.accumulatedAngle = 0;
+        this.flipCooldown = 0;
         this.crankDeltaHistory = new Array(Config.CRANK_HISTORY_SIZE).fill(0);
         this.crankHistoryIndex = 0;
         this.crankHistorySum = 0;
