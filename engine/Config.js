@@ -19,6 +19,7 @@ export const Config = {
     CRANK_HISTORY_SIZE: 10,
 
     // Animation durations (in frames at 30fps)
+    FLIP_COOLDOWN_FRAMES: 6,
     GRAB_ANIM_DURATION: 10,
     PLACE_ANIM_DURATION: 10,
     CHECK_FRAME_INTERVAL: 3,

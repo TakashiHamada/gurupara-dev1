@@ -502,7 +502,6 @@ class Game {
         // Slide animation
         if (state.isSliding) {
             this._updateSlideAnimation();
-            return;
         }
 
         // Place animation
@@ -529,13 +528,16 @@ class Game {
             this.sound.playRelease();
         }
 
+        // Flip cooldown timer
+        if (state.flipCooldown > 0) state.flipCooldown--;
+
         // Frame movement: instant flip on key press, crank for analog input
         if (!this._isCrankBlocked() && !this._isTutorialCrankBlocked()) {
-            if (this.input.isRightJustPressed()) {
+            if (this.input.isRightJustPressed() && state.flipCooldown <= 0) {
                 this._flipFrame(1);
-            } else if (this.input.isLeftJustPressed()) {
+            } else if (this.input.isLeftJustPressed() && state.flipCooldown <= 0) {
                 this._flipFrame(-1);
-            } else {
+            } else if (!state.isSliding) {
                 this._processFrameMovement(crankDelta);
             }
         }
@@ -573,7 +575,7 @@ class Game {
         if (this._isTutorialStopOverlayActive()) return true;
         if (this._isTutorialCrankBlocked()) return true;
         return s.isPlacing || s.isChecking || s.isWaitingResult || s.showResult ||
-               s.isSliding || s.isPaused || s.isPlayingClearAnim || s.isCelebrating;
+               s.isPaused || s.isPlayingClearAnim || s.isCelebrating;
     }
 
     _updateCrankSmoothing(crankDelta) {
@@ -600,9 +602,16 @@ class Game {
         const count = s.puzzle.getCurrentCount();
         if (count === 0) return;
 
+        // Cancel current slide if still running
+        if (s.isSliding) {
+            s.isSliding = false;
+            s.slideProgress = 1;
+        }
+
         const prevImg = s.puzzle.getFrameAt(s.currentFrameIndex);
         s.currentFrameIndex = (s.currentFrameIndex + direction + count) % count;
         s.accumulatedAngle = 0;
+        s.flipCooldown = Config.FLIP_COOLDOWN_FRAMES;
 
         this._startSlide(direction, prevImg);
         if (direction > 0) {
