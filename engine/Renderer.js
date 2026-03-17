@@ -1068,20 +1068,20 @@ export class Renderer {
         const textData = Config.TUTORIAL_STEP_TEXT[tutorial.step];
         if (textData) {
             const innerW = overlayW - border * 2;
-            const lineHeight = 24;
-            const lineGap = 4;
+            const lineHeight = 36;
+            const lineGap = 6;
             const lineCount = textData[1] ? 2 : 1;
             const totalTextH = lineCount * lineHeight + (lineCount - 1) * lineGap;
             const promptH = tutorial.overlayType === "stop" ? 30 : 0;
             const innerH = overlayH - border * 2;
             const baseY = oy + border + (innerH - totalTextH - promptH) / 2;
 
-            ctx.font = '16px monospace';
+            ctx.font = '24px monospace';
             const w1 = ctx.measureText(textData[0]).width;
-            ctx.fillText(textData[0], ox + border + (innerW - w1) / 2, baseY + 14);
+            ctx.fillText(textData[0], ox + border + (innerW - w1) / 2, baseY + 21);
             if (textData[1]) {
                 const w2 = ctx.measureText(textData[1]).width;
-                ctx.fillText(textData[1], ox + border + (innerW - w2) / 2, baseY + lineHeight + lineGap + 14);
+                ctx.fillText(textData[1], ox + border + (innerW - w2) / 2, baseY + lineHeight + lineGap + 21);
             }
         }
 
@@ -1133,21 +1133,21 @@ export class Renderer {
 
         // Text
         ctx.fillStyle = '#000';
-        ctx.font = '16px monospace';
+        ctx.font = '24px monospace';
         const textData = Config.FIRST_GAME_HINT_TEXT;
         const innerW = overlayW - border * 2;
         const innerH = overlayH - border * 2;
-        const lineHeight = 24;
-        const lineGap = 4;
+        const lineHeight = 36;
+        const lineGap = 6;
         const totalTextH = lineHeight * 2 + lineGap;
         const promptH = 30;
         const baseY = oy + border + (innerH - totalTextH - promptH) / 2;
 
         const w1 = ctx.measureText(textData[0]).width;
-        ctx.fillText(textData[0], ox + border + (innerW - w1) / 2, baseY + 14);
+        ctx.fillText(textData[0], ox + border + (innerW - w1) / 2, baseY + 21);
         if (textData[1]) {
             const w2 = ctx.measureText(textData[1]).width;
-            ctx.fillText(textData[1], ox + border + (innerW - w2) / 2, baseY + lineHeight + lineGap + 14);
+            ctx.fillText(textData[1], ox + border + (innerW - w2) / 2, baseY + lineHeight + lineGap + 21);
         }
 
         // "PRESS [Enter]" prompt
