@@ -63,9 +63,8 @@ export class Renderer {
             }
         }
 
-        // Menu item text (centered at TITLE_MENU_Y)
-        const MENU_ITEMS = ['START GAME', 'SETTINGS', 'CREDITS'];
-        const menuText = MENU_ITEMS[titleState.selectedMenuIndex];
+        // Menu item text (demo: START GAME only, no arrows)
+        const menuText = 'START GAME';
         ctx.save();
         ctx.textBaseline = 'top';
         ctx.fillStyle = '#000';
@@ -73,43 +72,7 @@ export class Renderer {
         const menuWidth = ctx.measureText(menuText).width;
         const menuX = (W - menuWidth) / 2;
         const menuY = Config.TITLE_MENU_Y;
-        const menuHeight = 20;
         ctx.fillText(menuText, menuX, menuY);
-
-        // 3D rotating arrows flanking menu text
-        const triSize = Config.TITLE_MENU_ARROW_SIZE;
-        const triGap = Config.TITLE_MENU_ARROW_GAP;
-        const triCenterY = menuY + menuHeight / 2;
-        const scale = Math.abs(Math.cos(titleState.arrowAnimTime * Config.TITLE_MENU_ARROW_SPEED));
-        const scaledHeight = triSize * scale;
-
-        ctx.textBaseline = 'alphabetic';
-
-        // Left arrow
-        const lx = menuX - triGap - triSize;
-        if (scaledHeight > 1) {
-            ctx.beginPath();
-            ctx.moveTo(lx + triSize, triCenterY - scaledHeight);
-            ctx.lineTo(lx, triCenterY);
-            ctx.lineTo(lx + triSize, triCenterY + scaledHeight);
-            ctx.closePath();
-            ctx.fill();
-        } else {
-            ctx.fillRect(lx, triCenterY - 0.5, triSize, 1);
-        }
-
-        // Right arrow
-        const rx = menuX + menuWidth + triGap;
-        if (scaledHeight > 1) {
-            ctx.beginPath();
-            ctx.moveTo(rx, triCenterY - scaledHeight);
-            ctx.lineTo(rx + triSize, triCenterY);
-            ctx.lineTo(rx, triCenterY + scaledHeight);
-            ctx.closePath();
-            ctx.fill();
-        } else {
-            ctx.fillRect(rx, triCenterY - 0.5, triSize, 1);
-        }
 
         // "PRESS [Enter] TO SELECT" floating text
         ctx.textBaseline = 'top';

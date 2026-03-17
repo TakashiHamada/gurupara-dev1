@@ -188,35 +188,8 @@ class Game {
             if (ts.bgScrollY <= -spacing) ts.bgScrollY += spacing;
         }
 
-        // Menu navigation (left/right)
-        if (this.input.isRightJustPressed()) {
-            ts.selectedMenuIndex = (ts.selectedMenuIndex + 1) % 3;
-            ts.arrowAnimTime = 0;
-            ts.crankAccumulated = 0;
-            this.sound.playCursor();
-        } else if (this.input.isLeftJustPressed()) {
-            ts.selectedMenuIndex = (ts.selectedMenuIndex + 2) % 3;
-            ts.arrowAnimTime = 0;
-            ts.crankAccumulated = 0;
-            this.sound.playCursor();
-        }
-
-        // Crank-based menu navigation
-        const crankDelta = this.input.getCrankDelta();
-        if (crankDelta !== 0) {
-            ts.crankAccumulated += crankDelta;
-            if (ts.crankAccumulated >= Config.TITLE_MENU_CRANK_DEGREES) {
-                ts.selectedMenuIndex = (ts.selectedMenuIndex + 1) % 3;
-                ts.crankAccumulated = 0;
-                ts.arrowAnimTime = 0;
-                this.sound.playCursor();
-            } else if (ts.crankAccumulated <= -Config.TITLE_MENU_CRANK_DEGREES) {
-                ts.selectedMenuIndex = (ts.selectedMenuIndex + 2) % 3;
-                ts.crankAccumulated = 0;
-                ts.arrowAnimTime = 0;
-                this.sound.playCursor();
-            }
-        }
+        // Menu fixed to START GAME (demo version)
+        ts.selectedMenuIndex = 0;
 
         // Select menu item
         if (this.input.isCheckJustPressed()) {
