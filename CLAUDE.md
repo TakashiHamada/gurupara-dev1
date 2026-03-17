@@ -51,7 +51,15 @@ The following mapping must be implemented to support both Keyboard and Gamepads:
 
 
 
-## 5. File Structure (Target)
+## 5. Local Development Server
+
+ローカルサーバーの起動には `live-server` を使用する（ホットリロード対応・キャッシュ問題回避のため）。
+
+```bash
+npx live-server --port=8000 --no-browser
+```
+
+## 6. File Structure (Target)
 
 ```
 /
