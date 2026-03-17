@@ -63,7 +63,7 @@ export class Renderer {
             }
         }
 
-        // Menu item text (demo: START GAME only, no arrows)
+        // Menu item text (demo: START GAME only)
         const menuText = 'START GAME';
         ctx.save();
         ctx.textBaseline = 'top';
@@ -72,7 +72,41 @@ export class Renderer {
         const menuWidth = ctx.measureText(menuText).width;
         const menuX = (W - menuWidth) / 2;
         const menuY = Config.TITLE_MENU_Y;
+        const menuHeight = 20;
         ctx.fillText(menuText, menuX, menuY);
+
+        // Arrows pointing inward toward START GAME
+        const triSize = Config.TITLE_MENU_ARROW_SIZE;
+        const triGap = Config.TITLE_MENU_ARROW_GAP;
+        const triCenterY = menuY + menuHeight / 2;
+        const scale = Math.abs(Math.cos(titleState.arrowAnimTime * Config.TITLE_MENU_ARROW_SPEED));
+        const scaledHeight = triSize * scale;
+
+        // Left arrow (pointing right → toward text)
+        const lx = menuX - triGap - triSize;
+        if (scaledHeight > 1) {
+            ctx.beginPath();
+            ctx.moveTo(lx, triCenterY - scaledHeight);
+            ctx.lineTo(lx + triSize, triCenterY);
+            ctx.lineTo(lx, triCenterY + scaledHeight);
+            ctx.closePath();
+            ctx.fill();
+        } else {
+            ctx.fillRect(lx, triCenterY - 0.5, triSize, 1);
+        }
+
+        // Right arrow (pointing left ← toward text)
+        const rx = menuX + menuWidth + triGap;
+        if (scaledHeight > 1) {
+            ctx.beginPath();
+            ctx.moveTo(rx + triSize, triCenterY - scaledHeight);
+            ctx.lineTo(rx, triCenterY);
+            ctx.lineTo(rx + triSize, triCenterY + scaledHeight);
+            ctx.closePath();
+            ctx.fill();
+        } else {
+            ctx.fillRect(rx, triCenterY - 0.5, triSize, 1);
+        }
 
         // "PRESS [Enter] TO SELECT" floating text
         ctx.textBaseline = 'top';
