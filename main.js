@@ -554,11 +554,12 @@ class Game {
 
         // Check answer (Enter / A button)
         if (this.input.isCheckJustPressed() && !this._isBlocked() && !this._isTutorialCheckBlocked()) {
-            // Don't check if tutorial stop overlay is active
-            if (!this._isTutorialStopOverlayActive()) {
+            // Don't check if tutorial stop overlay is active or hint was just dismissed this frame
+            if (!this._isTutorialStopOverlayActive() && !this.tutorial.hintJustDismissed) {
                 this._startCheck();
             }
         }
+        this.tutorial.hintJustDismissed = false;
 
         // Pause (Esc / B button)
         if (this.input.isPauseJustPressed() && !this._isBlocked() && !this._isTutorialStopOverlayActive()) {
@@ -1052,6 +1053,7 @@ class Game {
                 console.log('[Tutorial] First game hint dismissed');
                 t.overlayVisible = false;
                 t.showingFirstGameHint = false;
+                t.hintJustDismissed = true;
                 // Good animation: reverse (exit)
                 t.goodAnimTimer = 0;
                 t.goodAnimPhase = "reverse";

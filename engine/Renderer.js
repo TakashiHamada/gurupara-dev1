@@ -276,14 +276,15 @@ export class Renderer {
         } else if (state.isChecking) {
             // Check animation
             const frameIdx = state.checkAnimFrame % state.frameCount;
+            const img = frames[frameIdx];
+            if (img && img.complete) {
+                ctx.drawImage(img, imgX, imgY, displaySize, displaySize);
+            }
             if (state.checkAnimFrame % 2 === 1) {
+                ctx.globalAlpha = Config.CHECK_FLASH_ALPHA;
                 ctx.fillStyle = '#000';
                 ctx.fillRect(0, 0, Config.SCREEN_WIDTH, Config.SCREEN_HEIGHT);
-            } else {
-                const img = frames[frameIdx];
-                if (img && img.complete) {
-                    ctx.drawImage(img, imgX, imgY, displaySize, displaySize);
-                }
+                ctx.globalAlpha = 1;
             }
         } else if (state.isPlayingClearAnim) {
             const frameIdx = state.clearAnimFrame % state.frameCount;
