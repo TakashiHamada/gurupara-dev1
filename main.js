@@ -204,7 +204,7 @@ class Game {
                         if (tutorialCleared) {
                             console.log('[Scene] Title → Selection');
                             this.state.currentScene = Scene.SELECTION;
-                            this.state.selectedIndex = this.state.lastSelectedStage;
+                            this.state.selectedIndex = Math.min(this.state.lastSelectedStage, Config.STAGES.length - 1);
                             this.sound.playBGM('selection');
                         } else {
                             console.log('[Scene] Title → Game (tutorial)');
@@ -244,12 +244,9 @@ class Game {
         }
 
         // Cursor movement
-        const cols = Config.SELECTION_GRID_COLS;
-        const rows = Config.SELECTION_GRID_ROWS;
-        let idx = this.state.selectedIndex;
-        let moved = false;
-
         const stageCount = Config.STAGES.length;
+        let idx = Math.min(this.state.selectedIndex, stageCount - 1);
+        let moved = false;
         if (this.input.isLeftJustPressed()) {
             idx = (idx - 1 + stageCount) % stageCount;
             moved = true;
@@ -920,7 +917,7 @@ class Game {
                 this.transition.start(
                     () => {
                         s.currentScene = Scene.SELECTION;
-                        s.selectedIndex = s.lastSelectedStage;
+                        s.selectedIndex = Math.min(s.lastSelectedStage, Config.STAGES.length - 1);
                         this.sound.playBGM('selection');
                     },
                     null
@@ -1161,7 +1158,7 @@ class Game {
             this.transition.start(
                 () => {
                     s.currentScene = Scene.SELECTION;
-                    s.selectedIndex = s.lastSelectedStage;
+                    s.selectedIndex = Math.min(s.lastSelectedStage, Config.STAGES.length - 1);
                     this.sound.playBGM('selection');
                 },
                 null

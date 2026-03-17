@@ -156,7 +156,8 @@ export class Renderer {
         const START_Y = Math.floor((H - TILE) / 2);
 
         for (let i = 0; i < stageCount; i++) {
-            const index = i;
+            const stage = Config.STAGES[i];
+            const index = stage.index;
             const x = START_X + i * (TILE + SPACING);
             const y = START_Y;
 
@@ -169,6 +170,10 @@ export class Renderer {
                 const img = mainFrames[frameIdx];
                 if (img && img.complete) {
                     ctx.drawImage(img, x, y, TILE, TILE);
+                } else {
+                    // Fallback while image is loading
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(x, y, TILE, TILE);
                 }
             } else {
                 // Uncleared: solid gray tile with "?" mark
@@ -345,7 +350,7 @@ export class Renderer {
             if (!tutorialGrabLocked) {
                 this._drawHint(state);
             }
-            this._drawCrankIndicator();
+            this._drawFlipKeyHint();
         }
 
         // Celebration overlay
@@ -1060,8 +1065,11 @@ export class Renderer {
             return;
         }
 
-        // Step 4: no text overlay (crank indicator shown via showHint)
+        // Step 4: no text overlay, but force flip key hint to be visible
         if (tutorial.isTutorialStage && tutorial.step === 4) {
+            if (tutorial.crankIndicatorDelayTimer >= Config.TUTORIAL_CRANK_INDICATOR_DELAY) {
+                this._drawFlipKeyHint();
+            }
             return;
         }
 
@@ -1195,7 +1203,7 @@ export class Renderer {
         ctx.fillText(promptText, ox + border + (innerW - promptWidth) / 2, promptBaseY + floatOffset);
     }
 
-    _drawCrankIndicator() {
+    _drawFlipKeyHint() {
         const ctx = this.ctx;
         const W = Config.SCREEN_WIDTH;
         const H = Config.SCREEN_HEIGHT;
