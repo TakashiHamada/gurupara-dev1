@@ -66,6 +66,7 @@ export const Config = {
     IMAGE_OFFSET_Y: 20,
 
     // Thumbnail (grabbed frame)
+    THUMBNAIL_SCALE: 0.5,
     THUMBNAIL_X: -20,
     THUMBNAIL_Y: -4,
     THUMBNAIL_BORDER: 8,
@@ -74,7 +75,7 @@ export const Config = {
     THUMBNAIL_CORNER_RADIUS: 20,
     THUMBNAIL_WAVE_AMPLITUDE: 3,
     THUMBNAIL_WAVE_FREQUENCY: 12,
-    THUMBNAIL_WAVE_SPEED: 4,
+    THUMBNAIL_WAVE_SPEED: 0.6,
     THUMBNAIL_BORDER_SCALE_START: 4.0,
 
     // Rewind icon (top-left, production style)

@@ -511,7 +511,7 @@ export class Renderer {
         const img = frames[state.grabbedFrame];
         if (!img || !img.complete) return;
 
-        const THUMBNAIL_SCALE = Config.IMAGE_SIZE / W; // ~0.3
+        const THUMBNAIL_SCALE = Config.THUMBNAIL_SCALE;
 
         const t = easeOutQuad(state.grabAnimProgress);
         const currentX = Config.THUMBNAIL_X * t;
@@ -564,7 +564,7 @@ export class Renderer {
         const img = frames[state.placingFrame];
         if (!img || !img.complete) return;
 
-        const THUMBNAIL_SCALE = Config.IMAGE_SIZE / W;
+        const THUMBNAIL_SCALE = Config.THUMBNAIL_SCALE;
 
         const t = easeOutQuad(state.placeAnimProgress);
         const currentX = Config.THUMBNAIL_X + (0 - Config.THUMBNAIL_X) * t;
