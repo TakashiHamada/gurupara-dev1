@@ -249,28 +249,13 @@ class Game {
         let idx = this.state.selectedIndex;
         let moved = false;
 
+        const stageCount = Config.STAGES.length;
         if (this.input.isLeftJustPressed()) {
-            const col = idx % cols;
-            const row = Math.floor(idx / cols);
-            idx = row * cols + ((col - 1 + cols) % cols);
+            idx = (idx - 1 + stageCount) % stageCount;
             moved = true;
         }
         if (this.input.isRightJustPressed()) {
-            const col = idx % cols;
-            const row = Math.floor(idx / cols);
-            idx = row * cols + ((col + 1) % cols);
-            moved = true;
-        }
-        if (this.input.isUpJustPressed()) {
-            const col = idx % cols;
-            const row = Math.floor(idx / cols);
-            idx = ((row - 1 + rows) % rows) * cols + col;
-            moved = true;
-        }
-        if (this.input.isDownJustPressed()) {
-            const col = idx % cols;
-            const row = Math.floor(idx / cols);
-            idx = ((row + 1) % rows) * cols + col;
+            idx = (idx + 1) % stageCount;
             moved = true;
         }
 

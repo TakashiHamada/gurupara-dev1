@@ -132,10 +132,12 @@ export class Renderer {
         const START_X = 7;
         const START_Y = 12;
 
-        // Draw tiles
+        // Draw tiles (demo: only show stages defined in STAGES)
+        const stageCount = Config.STAGES.length;
         for (let row = 0; row < ROWS; row++) {
             for (let col = 0; col < COLS; col++) {
                 const index = row * COLS + col;
+                if (index >= stageCount) continue;
                 const x = START_X + col * (TILE + SPACING);
                 const y = START_Y + row * (TILE + SPACING);
 
