@@ -326,13 +326,33 @@ export class Renderer {
         // Hint (left: grab/check, right: flip keys)
         if (state.showHint && !state.isGrabbing && !state.isPlacing && !state.isPaused &&
             !state.showResult && !state.isCelebrating) {
-            this._drawHint(state);
+            const tutorialGrabLocked = tutorial && tutorial.isTutorialStage && tutorial.step < Config.TUTORIAL_DPAD_UNLOCK_STEP;
+            if (!tutorialGrabLocked) {
+                this._drawHint(state);
+            }
             this._drawCrankIndicator();
         }
 
         // Celebration overlay
         if (state.isCelebrating) {
             this._drawCelebration(state);
+        }
+
+        // Animation name during clear replay
+        if (state.isPlayingClearAnim && state.celebrationTitleShown && state.currentAnimationName) {
+            const name = state.currentAnimationName;
+            ctx.font = 'bold 24px monospace';
+            const textW = ctx.measureText(name).width;
+            const padX = Config.CELEBRATION_TITLE_PAD_X;
+            const padY = Config.CELEBRATION_TITLE_PAD_Y;
+            const bgW = textW + padX * 2;
+            const bgH = 30 + padY * 2;
+            const bgX = (Config.SCREEN_WIDTH - bgW) / 2;
+            const bgY = Config.SCREEN_HEIGHT - bgH + Config.PAUSE_LABEL_OFFSET_Y;
+            ctx.fillStyle = '#000';
+            ctx.fillRect(bgX, bgY, bgW, bgH);
+            ctx.fillStyle = '#fff';
+            ctx.fillText(name, bgX + padX, bgY + padY + 22);
         }
 
         // Pause overlay
@@ -804,10 +824,10 @@ export class Renderer {
         const timeText = state.formatTime(safeTime);
         ctx.fillStyle = '#000';
         ctx.globalAlpha = 0.5;
-        ctx.font = 'bold 48px monospace';
+        ctx.font = `bold ${Config.PAUSE_TIME_FONT_SIZE}px monospace`;
         const timeW = ctx.measureText(timeText).width;
         const timeX = Math.floor((W - timeW) / 2);
-        const timeY = innerY + Config.PAUSE_TIME_TOP_MARGIN + 50;
+        const timeY = innerY + Config.PAUSE_TIME_TOP_MARGIN;
         ctx.fillText(timeText, timeX, timeY);
         ctx.globalAlpha = 1;
 
@@ -937,10 +957,10 @@ export class Renderer {
         const timeText = state.formatTime(state.getElapsedTime());
         ctx.fillStyle = '#000';
         ctx.globalAlpha = 0.5;
-        ctx.font = 'bold 48px monospace';
+        ctx.font = `bold ${Config.PAUSE_TIME_FONT_SIZE}px monospace`;
         const timeW = ctx.measureText(timeText).width;
         const timeX = Math.floor((W - timeW) / 2);
-        const timeY = innerY + Config.PAUSE_TIME_TOP_MARGIN + 50;
+        const timeY = innerY + Config.PAUSE_TIME_TOP_MARGIN;
         ctx.fillText(timeText, timeX, timeY);
         ctx.globalAlpha = 1;
 

@@ -947,6 +947,7 @@ class Game {
                 s.clearAnimTimer = 0;
                 s.clearAnimLoopCount = 0;
                 s.celebrationTitleShown = true;
+                this.sound.playAnswer(s.stageIndex);
             }
         } else {
             // NG: any input triggers reverse animation (which dismisses on completion)
@@ -984,6 +985,7 @@ class Game {
                     s.goodAnimFrame = 0;
                     s.goodAnimTimer = 0;
                     s.goodAnimPhase = "forward";
+                    this.sound.playOK(true);
                 }
             }
         }
