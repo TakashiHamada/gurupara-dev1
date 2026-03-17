@@ -472,6 +472,16 @@ class Game {
         // Celebration update
         if (state.isCelebrating) {
             this._updateCelebration();
+            // Allow skipping celebration with Enter or Esc
+            if (this.input.isCheckJustPressed() || this.input.isPauseJustPressed()) {
+                state.isCelebrating = false;
+                state.celebrationParticles = [];
+                state.showResult = true;
+                state.resultAnimTime = 0;
+                state.goodAnimFrame = 0;
+                state.goodAnimTimer = 0;
+                state.goodAnimPhase = "forward";
+            }
             return;
         }
 
@@ -899,6 +909,10 @@ class Game {
             s.celebrationParticles = [];
             s.showResult = true;
             s.resultAnimTime = 0;
+            // Restart good animation for result screen
+            s.goodAnimFrame = 0;
+            s.goodAnimTimer = 0;
+            s.goodAnimPhase = "forward";
         }
     }
 
@@ -927,6 +941,7 @@ class Game {
                 );
             } else if (this.input.isPauseJustPressed()) {
                 // Replay clear animation
+                s.showResult = false;
                 s.isPlayingClearAnim = true;
                 s.clearAnimFrame = 0;
                 s.clearAnimTimer = 0;
@@ -965,6 +980,10 @@ class Game {
                 if (s.clearAnimLoopCount >= Config.CLEAR_ANIM_LOOPS) {
                     s.isPlayingClearAnim = false;
                     s.celebrationTitleShown = false;
+                    s.showResult = true;
+                    s.goodAnimFrame = 0;
+                    s.goodAnimTimer = 0;
+                    s.goodAnimPhase = "forward";
                 }
             }
         }

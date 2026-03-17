@@ -278,7 +278,7 @@ export class Renderer {
             const frameIdx = state.checkAnimFrame % state.frameCount;
             if (state.checkAnimFrame % 2 === 1) {
                 ctx.fillStyle = '#000';
-                ctx.fillRect(imgX, imgY, displaySize, displaySize);
+                ctx.fillRect(0, 0, Config.SCREEN_WIDTH, Config.SCREEN_HEIGHT);
             } else {
                 const img = frames[frameIdx];
                 if (img && img.complete) {
@@ -453,10 +453,9 @@ export class Renderer {
             const currentHeight = H * scaleY;
             const slideY = H / 2 - currentHeight / 2;
 
-            // Draw current frame behind
-            const curImgIdx = state.puzzle.getFrameAt(state.currentFrameIndex);
-            if (curImgIdx !== undefined && frames[curImgIdx] && frames[curImgIdx].complete) {
-                ctx.drawImage(frames[curImgIdx], imgX, imgY, displaySize, displaySize);
+            // Draw previous frame behind (the page that was showing before)
+            if (state.slidePrevImage !== undefined && frames[state.slidePrevImage] && frames[state.slidePrevImage].complete) {
+                ctx.drawImage(frames[state.slidePrevImage], imgX, imgY, displaySize, displaySize);
             }
 
             // Shadow
@@ -465,7 +464,7 @@ export class Renderer {
                 this.fillRectDither(slideRight, slideY, sw, currentHeight, shadowAlpha);
             }
 
-            // Old frame sliding in
+            // New frame sliding in (the page we're going back to)
             const clipLeft = Math.max(0, slideX);
             const clipWidth = slideRight - clipLeft;
             if (clipWidth > 0) {
@@ -492,10 +491,11 @@ export class Renderer {
                     ctx.fillRect(slideX + W - segEdgeWidth, segY, segEdgeWidth, segmentHeight + 1);
                 }
 
-                if (state.slidePrevImage !== undefined && frames[state.slidePrevImage] && frames[state.slidePrevImage].complete) {
+                const curImgIdx = state.puzzle.getFrameAt(state.currentFrameIndex);
+                if (curImgIdx !== undefined && frames[curImgIdx] && frames[curImgIdx].complete) {
                     const imgScaledH = displaySize * scaleY;
                     const imgDrawY = slideY + (currentHeight - imgScaledH) / 2;
-                    ctx.drawImage(frames[state.slidePrevImage], slideX + imgX, imgDrawY, displaySize, imgScaledH);
+                    ctx.drawImage(frames[curImgIdx], slideX + imgX, imgDrawY, displaySize, imgScaledH);
                 }
 
                 ctx.restore();
