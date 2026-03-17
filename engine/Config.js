@@ -200,13 +200,12 @@ export const Config = {
     SELECTION_GRID_ROWS: 4,
     SELECTION_CRANK_DEGREES: 30,
 
-    // Hints
+    // Game hints (bottom-left: grab/check, bottom-right: flip keys)
     HINT_IDLE_FRAMES: 60,
-    HINT_LINE1_X: 6,
-    HINT_LINE1_Y: 184,
-    HINT_LINE2_X: 6,
-    HINT_LINE2_Y: 210,
-    HINT_ICON_GAP: 4,
+    HINT_FONT_SIZE: 12,
+    HINT_LINE_HEIGHT: 16,
+    HINT_MARGIN_X: 8,
+    HINT_MARGIN_BOTTOM: 8,
 
     // Transition
     TRANSITION_PAGE_COUNT: 6,

@@ -323,10 +323,11 @@ export class Renderer {
             this._drawRewindIcon();
         }
 
-        // Hint
+        // Hint (left: grab/check, right: flip keys)
         if (state.showHint && !state.isGrabbing && !state.isPlacing && !state.isPaused &&
             !state.showResult && !state.isCelebrating) {
             this._drawHint(state);
+            this._drawCrankIndicator();
         }
 
         // Celebration overlay
@@ -714,13 +715,16 @@ export class Renderer {
 
     _drawHint(state) {
         const ctx = this.ctx;
+        const H = Config.SCREEN_HEIGHT;
         ctx.fillStyle = '#000';
-        ctx.font = '12px monospace';
+        ctx.font = `${Config.HINT_FONT_SIZE}px monospace`;
 
-        // Line 1: grab hint
-        ctx.fillText('[Space] grab', Config.HINT_LINE1_X, Config.HINT_LINE1_Y);
-        // Line 2: check hint
-        ctx.fillText('[Enter] check', Config.HINT_LINE2_X, Config.HINT_LINE2_Y);
+        const lh = Config.HINT_LINE_HEIGHT;
+        const x = Config.HINT_MARGIN_X;
+        const y = H - Config.HINT_MARGIN_BOTTOM - lh;
+
+        ctx.fillText('[Space] grab', x, y);
+        ctx.fillText('[Enter] check', x, y + lh);
     }
 
     // --- Celebration (confetti + title) ---
@@ -1021,11 +1025,8 @@ export class Renderer {
             return;
         }
 
-        // Step 4: crank indicator only (no text overlay)
+        // Step 4: no text overlay (crank indicator shown via showHint)
         if (tutorial.isTutorialStage && tutorial.step === 4) {
-            if (tutorial.crankIndicatorDelayTimer >= Config.TUTORIAL_CRANK_INDICATOR_DELAY) {
-                this._drawCrankIndicator();
-            }
             return;
         }
 
@@ -1164,15 +1165,16 @@ export class Renderer {
         const W = Config.SCREEN_WIDTH;
         const H = Config.SCREEN_HEIGHT;
 
-        // Simple crank indicator (arrows showing rotation)
-        const cx = W / 2;
-        const cy = H - 40;
-
+        // Key hint at bottom-right
         ctx.fillStyle = '#000';
-        ctx.font = '14px monospace';
-        const text = '<< Rotate >>';
-        const tw = ctx.measureText(text).width;
-        ctx.fillText(text, cx - tw / 2, cy);
+        ctx.font = `${Config.HINT_FONT_SIZE}px monospace`;
+        const line1 = '[Right key] next';
+        const line2 = '[Left  key] back';
+        const lh = Config.HINT_LINE_HEIGHT;
+        const x = W - Math.max(ctx.measureText(line1).width, ctx.measureText(line2).width) - Config.HINT_MARGIN_X;
+        const y = H - Config.HINT_MARGIN_BOTTOM - lh;
+        ctx.fillText(line1, x, y);
+        ctx.fillText(line2, x, y + lh);
     }
 
     // --- Transition ---

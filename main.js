@@ -529,9 +529,15 @@ class Game {
             this.sound.playRelease();
         }
 
-        // Frame movement from crank
+        // Frame movement: instant flip on key press, crank for analog input
         if (!this._isCrankBlocked() && !this._isTutorialCrankBlocked()) {
-            this._processFrameMovement(crankDelta);
+            if (this.input.isRightJustPressed()) {
+                this._flipFrame(1);
+            } else if (this.input.isLeftJustPressed()) {
+                this._flipFrame(-1);
+            } else {
+                this._processFrameMovement(crankDelta);
+            }
         }
 
         // Check answer (Enter / A button)
@@ -586,6 +592,31 @@ class Game {
         }
         if (wasIdle && !s.isCrankIdle) {
             s.isQuickStarting = true;
+        }
+    }
+
+    _flipFrame(direction) {
+        const s = this.state;
+        const count = s.puzzle.getCurrentCount();
+        if (count === 0) return;
+
+        const prevImg = s.puzzle.getFrameAt(s.currentFrameIndex);
+        s.currentFrameIndex = (s.currentFrameIndex + direction + count) % count;
+        s.accumulatedAngle = 0;
+
+        this._startSlide(direction, prevImg);
+        if (direction > 0) {
+            this.sound.playFlip();
+        } else {
+            this.sound.playFlipBack();
+        }
+
+        // Tutorial: track frame changes for Step 4
+        if (this.tutorial.isTutorialStage && this.tutorial.step === 4) {
+            this.tutorial.framesRotatedCount++;
+            if (this.tutorial.framesRotatedCount >= Config.TUTORIAL_CRANK_FRAMES_REQUIRED) {
+                this._tutorialEnterStep(5);
+            }
         }
     }
 
@@ -940,7 +971,7 @@ class Game {
 
     _updateIdleHint(crankDelta) {
         const s = this.state;
-        if (Math.abs(crankDelta) > Config.CRANK_THRESHOLD) {
+        if (Math.abs(crankDelta) > Config.CRANK_THRESHOLD || this.input.isLeftJustPressed() || this.input.isRightJustPressed()) {
             s.idleTimer = 0;
             s.showHint = false;
         } else if (this._isBlocked()) {
@@ -1034,7 +1065,7 @@ class Game {
             } else {
                 if (this._isBlocked()) {
                     t.idleTimer = 0;
-                } else if (Math.abs(crankDelta) > Config.CRANK_THRESHOLD) {
+                } else if (Math.abs(crankDelta) > Config.CRANK_THRESHOLD || this.input.isLeftJustPressed() || this.input.isRightJustPressed()) {
                     t.idleTimer = 0;
                 } else {
                     t.idleTimer++;
