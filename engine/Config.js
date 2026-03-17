@@ -1,11 +1,11 @@
-// Config.js - All configurable parameters (transpiled from config/*.lua)
+// Config.js - All tunable parameters for the Flip-Flap Crank web demo
 
 export const Config = {
     // Screen
     SCREEN_WIDTH: 400,
     SCREEN_HEIGHT: 240,
 
-    // Crank (matched to production config/crank.lua)
+    // Crank sensitivity (used for analog crank input)
     SENSITIVITY_OPTIONS: [
         { name: "Slow", degrees: 150 },
         { name: "Normal", degrees: 120 },
@@ -19,7 +19,7 @@ export const Config = {
     CRANK_HISTORY_SIZE: 10,
 
     // Animation durations (in frames at 30fps)
-    FLIP_COOLDOWN_FRAMES: 6,
+    FLIP_COOLDOWN_FRAMES: 6,  // Minimum frames between instant key flips
     GRAB_ANIM_DURATION: 10,
     PLACE_ANIM_DURATION: 10,
     CHECK_FRAME_INTERVAL: 3,
@@ -172,7 +172,7 @@ export const Config = {
     PAUSE_PROMPT_LINE_SPACING: 22,
     PAUSE_LABEL_OFFSET_Y: 6,
 
-    // Title screen (matched to production config/animation.lua)
+    // Title screen
     TITLE_ANIM_FRAME_COUNT: 16,
     TITLE_ANIM_FRAME_INTERVAL: 5,
     TITLE_MENU_Y: 172,
@@ -181,28 +181,25 @@ export const Config = {
     TITLE_MENU_ARROW_SIZE: 6,
     TITLE_MENU_ARROW_GAP: 8,
     TITLE_MENU_ARROW_SPEED: 0.8,
-    TITLE_MENU_CRANK_DEGREES: 60,
     TITLE_BG_DOT_SPACING: 32,
     TITLE_BG_DOT_RADIUS: 8,
     TITLE_BG_SCROLL_SPEED: 0.3,
     TITLE_BG_DOT_INTRO_FRAMES: 6,
 
-    // Sound (matched to production config/sound.lua)
+    // Sound
     SE_VOLUME: 0.8,
     BGM_VOLUME: 0.5,
     BGM_PAUSE_VOLUME: 0.17,
     BGM_RESULT_FADE_IN_FRAMES: 30,
     BGM_PAUSE_FADE_FRAMES: 9,
 
-    // Selection
-    SELECTION_FRAME_SIZE: 120,
-    SELECTION_FRAME_CORNER_LENGTH: 24,
-    SELECTION_FRAME_CORNER_WIDTH: 8,
+    // Selection screen (demo: 3 stages in a row)
     SELECTION_TILE_SIZE: 100,
     SELECTION_TILE_SPACING: 5,
-    SELECTION_GRID_COLS: 7,
-    SELECTION_GRID_ROWS: 4,
-    SELECTION_CRANK_DEGREES: 30,
+    SELECTION_TILE_BORDER: 4,
+    SELECTION_CURSOR_SIZE: 120,
+    SELECTION_CURSOR_CORNER_LENGTH: 24,
+    SELECTION_CURSOR_CORNER_WIDTH: 8,
 
     // Game hints (bottom-left: grab/check, bottom-right: flip keys)
     HINT_IDLE_FRAMES: 60,
@@ -222,12 +219,10 @@ export const Config = {
     CLEAR_ANIM_LOOPS: 2,
     CLEAR_ANIM_FRAME_INTERVAL: 4,
 
-    // Stages info (updated: tutorial is 0_Egg, not 0_Fish)
+    // Demo stages (3 stages only)
     STAGES: [
         { index: 0, name: "Egg", folder: "0_Egg", frameCount: 4 },
         { index: 1, name: "Apple", folder: "1_Apple", frameCount: 9 },
         { index: 2, name: "Bounce", folder: "2_Bounce", frameCount: 9 },
     ],
-    TOTAL_STAGES: 28,
-    FINAL_STAGE_INDEX: 27,
 };

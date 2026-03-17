@@ -147,7 +147,7 @@ export class Renderer {
 
         const TILE = Config.SELECTION_TILE_SIZE;
         const SPACING = Config.SELECTION_TILE_SPACING;
-        const BORDER = 4;
+        const BORDER = Config.SELECTION_TILE_BORDER;
 
         // Draw tiles (demo: centered horizontally)
         const stageCount = Config.STAGES.length;
@@ -200,9 +200,9 @@ export class Renderer {
         const tileX = startX + col * (tileSize + spacing);
         const tileY = startY + row * (tileSize + spacing);
 
-        const frameSize = Config.SELECTION_FRAME_SIZE;
-        const cornerLen = Config.SELECTION_FRAME_CORNER_LENGTH;
-        const cornerW = Config.SELECTION_FRAME_CORNER_WIDTH;
+        const frameSize = Config.SELECTION_CURSOR_SIZE;
+        const cornerLen = Config.SELECTION_CURSOR_CORNER_LENGTH;
+        const cornerW = Config.SELECTION_CURSOR_CORNER_WIDTH;
 
         const fx = tileX - (frameSize - tileSize) / 2;
         const fy = tileY - (frameSize - tileSize) / 2;
@@ -253,12 +253,12 @@ export class Renderer {
         const cleared = Object.keys(state.hiScores).length;
         ctx.fillStyle = '#000';
         ctx.font = 'bold 24px monospace';
-        const progText = `${cleared}/${Config.TOTAL_STAGES}`;
+        const progText = `${cleared}/${Config.STAGES.length}`;
         const progW = ctx.measureText(progText).width;
         ctx.fillText(progText, (W - progW) / 2, 92);
 
         // Percent
-        const pct = ((cleared / Config.TOTAL_STAGES) * 100).toFixed(1);
+        const pct = ((cleared / Config.STAGES.length) * 100).toFixed(1);
         ctx.font = '16px monospace';
         const pctText = `${pct}%`;
         const pctW = ctx.measureText(pctText).width;
