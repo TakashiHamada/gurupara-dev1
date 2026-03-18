@@ -1,3 +1,82 @@
+/* ===== 調整パラメーター ===== */
+:root {
+    /* 画面に対する黄色マージン（左・上・右） */
+    --margin-left: 8px;
+    --margin-top: 8px;
+    --margin-right: 46px;   /* 右はスピーカー分やや広め */
+
+    /* 画面の黒枠（ベゼル）の幅 */
+    --bezel-width: 18px;
+
+    /* 四隅の穴（ネジ）の大きさ */
+    --screw-size: 30px;
+
+    /* スピーカー */
+    --speaker-width: 18px;
+    --speaker-height: 90px;
+    --speaker-top: 104px;
+    --speaker-right: 14px;
+    --speaker-radius: 8px;
+    --speaker-dot-size: 4px;     /* 穴の大きさ */
+    --speaker-dot-gap: 6px;      /* 穴の間隔（中心から中心） */
+    --speaker-dot-color: #3f3f3f;
+    --speaker-bg-color: #626262;     /* 背景色 */
+
+    /* メニューボタン（画面右横） */
+    --menu-btn-size: 32px;
+    --menu-btn-top: 50px;
+    --menu-btn-right: 8px;
+
+    /* ロックスイッチ（上面から突出する長方形） */
+    --lock-width: 60px;
+    --lock-height: 8px;
+    --lock-right: 60px;
+
+    /* 十字キー（D-pad） */
+    --dpad-size: 130px;        /* 全体サイズ */
+    --dpad-top: 320px;         /* 上位置 */
+    --dpad-left: 45px;         /* 左位置 */
+    --dpad-arm-width: 29%;     /* 腕の太さ（全体に対する%） */
+    --dpad-arm-radius: 16px;    /* 腕の角丸 */
+
+    /* A, B ボタン */
+    --ab-btn-size: 58px;
+    --btn-b-top: 325px;
+    --btn-b-left: 265px;
+    --btn-a-top: 325px;
+    --btn-a-left: 360px;
+
+    /* Playdate Wrapper */
+    --wrapper-padding-right: 58px;   /* クランク分の余白 */
+
+    /* キーボードリマインダー */
+    --reminder-margin-right: 110px;  /* デバイスに対する右方向オフセット */
+
+    /* クランク */
+    --crank-pivot-y: 260px;            /* ピボット（回転中心）のY位置 */
+    --crank-pivot-offset: -6px;         /* ピボットのデバイス右端からの距離 */
+    --crank-base-width: 9px;          /* ヒンジ台座の幅 */
+    --crank-base-height: 48px;         /* ヒンジ台座の高さ */
+    --crank-base-offset: -9px;         /* ヒンジ台座の右位置（負=はみ出し） */
+    --crank-arm-length: 36px;          /* アームの長さ（横方向） */
+    --crank-arm-height: 200px;          /* アームの高さ（縦長の長方形） */
+    --crank-handle-width: 70px;        /* ハンドルの幅 */
+    --crank-handle-height: 50px;       /* ハンドルの高さ */
+    --crank-handle-radius: 2px;       /* ハンドルの角丸 */
+    --crank-base-color: #464646;          /* ヒンジ台座の色 */
+    --crank-arm-color-top: #8a8a8a;       /* アームのグラデーション上端 */
+    --crank-arm-color-mid: #5a5a5a;       /* アームのグラデーション中間 */
+    --crank-arm-color-bottom: #5a5a5a;    /* アームのグラデーション下端 */
+    --crank-handle-color: #e8b820;     /* ハンドルの色 */
+    --crank-handle-offset-x: 53px;      /* ハンドルのX方向オフセット（正=右） */
+    --crank-handle-offset-y: 74px;      /* ハンドルのY方向オフセット（正=下） */
+    --crank-arm-offset-x: -1px;         /* アームのX方向オフセット（正=右） */
+    --crank-arm-offset-y: 20px;         /* アームのY方向オフセット（正=下） */
+    --crank-adjust-x: 0px;             /* 回転グループのX微調整（正=右） */
+    --crank-adjust-y: 0px;             /* 回転グループのY微調整（正=下） */
+    --crank-rotation: 0deg;            /* X軸回転角度（0=正面、90=奥向き、180=裏、270=手前） */
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -5,26 +84,321 @@
 }
 
 body {
-    background: #222;
+    background: #2a2a2a;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     font-family: 'Segoe UI', system-ui, sans-serif;
+    overflow-x: hidden;
+}
+
+/* ===== Playdate Wrapper (centers device + crank) ===== */
+.playdate-wrapper {
+    padding-right: var(--wrapper-padding-right);
+}
+
+/* ===== Playdate Device Body ===== */
+.playdate-device {
+    position: relative;
+    width: calc(400 * 1px + var(--bezel-width) * 2 + var(--margin-left) + var(--margin-right));
+    height: 490px;
+    background: linear-gradient(165deg, #fad440 0%, #f0b820 100%);
+    border-radius: 16px;
+    box-shadow:
+        0 6px 24px rgba(0, 0, 0, 0.5),
+        0 1px 4px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    overflow: visible;
+}
+
+/* ===== Screen Bezel ===== */
+.screen-bezel {
+    position: absolute;
+    top: var(--margin-top);
+    left: var(--margin-left);
+    width: calc(400px + var(--bezel-width) * 2);
+    height: calc(240px + var(--bezel-width) * 2);
+    background: #111;
+    border-radius: 10px;
+    padding: var(--bezel-width);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
 #game-canvas {
     display: block;
-    width: 800px;
-    height: 480px;
+    width: 400px;
+    height: 240px;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     background: #fff;
-    border: 2px solid #444;
+    border-radius: 3px;
 }
 
-/* Controls Info */
+/* ===== Corner Screws (Phillips head) ===== */
+.screw {
+    position: absolute;
+    width: var(--screw-size);
+    height: var(--screw-size);
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 38%, #999, #555);
+    box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.5),
+        0 1px 1px rgba(255, 255, 255, 0.15);
+    z-index: 10;
+}
+/* 内側の暗い円 */
+.screw::after {
+    content: '';
+    position: absolute;
+    width: 50%;
+    height: 50%;
+    top: 25%;
+    left: 25%;
+    border-radius: 50%;
+    background: radial-gradient(circle, #444, #555);
+}
+.screw-tr { top: 10px; right: 10px; }
+.screw-bl { bottom: 10px; left: 10px; }
+.screw-br { bottom: 10px; right: 10px; }
+
+/* ===== Speaker Grille ===== */
+.speaker {
+    position: absolute;
+    top: var(--speaker-top);
+    right: var(--speaker-right);
+    width: var(--speaker-width);
+    height: var(--speaker-height);
+    border-radius: var(--speaker-radius);
+    background-color: var(--speaker-bg-color);
+    background-image:
+        radial-gradient(
+            circle,
+            var(--speaker-dot-color) calc(var(--speaker-dot-size) / 2),
+            transparent calc(var(--speaker-dot-size) / 2)
+        );
+    background-size: var(--speaker-dot-gap) var(--speaker-dot-gap);
+    background-position: center center;
+}
+
+/* ===== Menu Button（画面右横） ===== */
+.menu-btn {
+    position: absolute;
+    top: var(--menu-btn-top);
+    right: var(--menu-btn-right);
+    width: var(--menu-btn-size);
+    height: var(--menu-btn-size);
+    border-radius: 50%;
+    background: linear-gradient(to bottom, #fad440, #e8b820);
+    border: 2px solid #d48c00;
+    box-shadow:
+        0 2px 3px rgba(0, 0, 0, 0.25),
+        inset 0 1px 1px rgba(255, 255, 255, 0.25);
+}
+.menu-btn::after {
+    content: '';
+    position: absolute;
+    width: 55%;
+    height: 55%;
+    top: 22.5%;
+    left: 22.5%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+}
+
+/* ===== Lock Switch（上面から突出する長方形スイッチ） ===== */
+.lock-btn {
+    position: absolute;
+    top: calc(-1 * var(--lock-height));
+    right: var(--lock-right);
+    width: var(--lock-width);
+    height: var(--lock-height);
+    border-radius: 2px 2px 0 0;
+    background: linear-gradient(to bottom, #888, #666);
+    box-shadow:
+        0 -1px 2px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* ===== D-pad ===== */
+.dpad {
+    position: absolute;
+    top: var(--dpad-top);
+    left: var(--dpad-left);
+    width: var(--dpad-size);
+    height: var(--dpad-size);
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
+}
+.dpad-h,
+.dpad-v {
+    position: absolute;
+    background: linear-gradient(to bottom, #fce048, #e8b418);
+    border-radius: var(--dpad-arm-radius);
+}
+.dpad-h {
+    width: 100%;
+    height: var(--dpad-arm-width);
+    top: calc((100% - var(--dpad-arm-width)) / 2);
+    left: 0;
+}
+.dpad-v {
+    width: var(--dpad-arm-width);
+    height: 100%;
+    top: 0;
+    left: calc((100% - var(--dpad-arm-width)) / 2);
+}
+/* Center circle */
+.dpad::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 70%);
+    z-index: 2;
+}
+
+/* ===== A / B Buttons ===== */
+.pd-btn {
+    position: absolute;
+    width: var(--ab-btn-size);
+    height: var(--ab-btn-size);
+    border-radius: 50%;
+    background: linear-gradient(to bottom, #fad440, #e8b820);
+    border: 2px solid #d48c00;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+        0 2px 3px rgba(0, 0, 0, 0.25),
+        inset 0 1px 1px rgba(255, 255, 255, 0.25);
+    z-index: 1;
+}
+/* ボタン中央の白い丸 + 黄色文字 */
+.pd-btn span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 55%;
+    height: 55%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    font-weight: bold;
+    color: #d49000;
+    pointer-events: none;
+    user-select: none;
+}
+.btn-b {
+    top: var(--btn-b-top);
+    left: var(--btn-b-left);
+}
+.btn-a {
+    top: var(--btn-a-top);
+    left: var(--btn-a-left);
+}
+
+/* ===== Crank Assembly ===== */
+/* ヒンジ台座（固定） */
+.crank-base {
+    position: absolute;
+    top: calc(var(--crank-pivot-y) - var(--crank-base-height) / 2);
+    right: var(--crank-base-offset);
+    width: var(--crank-base-width);
+    height: var(--crank-base-height);
+    background: var(--crank-base-color);
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    z-index: 5;
+}
+/* 回転グループ — X軸回転、ピボットはアーム下端（ヒンジ接合部） */
+/*
+    構造（上から下）:
+    [ハンドル] ← アーム上端
+    [アーム  ] ← 縦長の長方形
+    [ヒンジ  ] ← アーム下端 = ピボット（回転中心）
+*/
+.crank-rotator {
+    position: absolute;
+    top: calc(var(--crank-pivot-y) + var(--crank-adjust-y));
+    left: calc(100% + var(--crank-pivot-offset) + var(--crank-adjust-x));
+    transform: translateY(-100%) perspective(300px) rotateX(var(--crank-rotation));
+    transform-origin: center bottom;
+    z-index: 4;
+}
+/* フリップアニメーション（位置決めとは分離） */
+.crank-flipper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: scaleY(var(--crank-flip, 1));
+    transform-origin: center bottom;
+    transition: transform 0.15s ease-in-out;
+}
+/* ハンドル（アームの上端） */
+.crank-handle {
+    width: var(--crank-handle-width);
+    height: var(--crank-handle-height);
+    background: var(--crank-handle-color);
+    border-radius: var(--crank-handle-radius);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    transform: translate(var(--crank-handle-offset-x), var(--crank-handle-offset-y));
+}
+/* アーム（縦長の長方形、下端がヒンジに接続） */
+.crank-arm {
+    width: var(--crank-arm-length);
+    height: var(--crank-arm-height);
+    background: linear-gradient(
+        to bottom,
+        var(--crank-arm-color-top),
+        var(--crank-arm-color-mid),
+        var(--crank-arm-color-bottom)
+    );
+    border-radius: 3px;
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transform: translate(var(--crank-arm-offset-x), var(--crank-arm-offset-y));
+}
+
+/* ===== Keyboard Reminder ===== */
+.keyboard-reminder {
+    margin-top: 12px;
+    margin-right: var(--reminder-margin-right);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 20px;
+    text-align: center;
+    transition: color 0.3s, transform 0.3s;
+}
+.keyboard-reminder.flash {
+    animation: reminder-flash 1.2s ease-out;
+}
+@keyframes reminder-flash {
+    0%   { color: #f5c524; transform: scale(1.15); }
+    30%  { color: #f5c524; transform: scale(1.15); }
+    100% { color: rgba(255, 255, 255, 0.6); transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .keyboard-reminder.flash {
+        animation: none;
+    }
+    .crank-flipper {
+        transition: none;
+    }
+}
+
+/* ===== Decorative buttons cursor ===== */
+.dpad, .pd-btn, .menu-btn {
+    cursor: pointer;
+}
+
+/* ===== Controls Help ===== */
 .controls-info {
     margin-top: 16px;
     color: rgba(255, 255, 255, 0.5);
@@ -32,7 +406,6 @@ body {
     text-align: center;
     line-height: 1.6;
 }
-
 .controls-info kbd {
     background: rgba(255, 255, 255, 0.15);
     padding: 2px 6px;

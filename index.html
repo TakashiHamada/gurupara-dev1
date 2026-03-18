@@ -7,7 +7,52 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <canvas id="game-canvas" width="400" height="240" tabindex="0"></canvas>
+    <div class="playdate-wrapper">
+        <div class="playdate-device">
+            <!-- Corner screws (左上はなし) -->
+            <div class="screw screw-tr"></div>
+            <div class="screw screw-bl"></div>
+            <div class="screw screw-br"></div>
+
+            <!-- Screen with black bezel -->
+            <div class="screen-bezel">
+                <canvas id="game-canvas" width="400" height="240" tabindex="0"></canvas>
+            </div>
+
+            <!-- Speaker grille -->
+            <div class="speaker"></div>
+
+            <!-- Menu button (画面右横) -->
+            <div class="menu-btn" role="button" tabindex="-1" aria-label="Menu button (decorative)"></div>
+
+            <!-- Lock button (右上) -->
+            <div class="lock-btn"></div>
+
+            <!-- D-pad -->
+            <div class="dpad" role="button" tabindex="-1" aria-label="D-pad (decorative)">
+                <div class="dpad-h"></div>
+                <div class="dpad-v"></div>
+            </div>
+
+            <!-- A / B Buttons -->
+            <div class="pd-btn btn-b" role="button" tabindex="-1" aria-label="B button (decorative)"><span>B</span></div>
+            <div class="pd-btn btn-a" role="button" tabindex="-1" aria-label="A button (decorative)"><span>A</span></div>
+
+            <!-- Crank -->
+            <div class="crank-base"></div>
+            <div class="crank-rotator">
+                <div class="crank-flipper">
+                    <div class="crank-handle"></div>
+                    <div class="crank-arm"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard reminder -->
+    <div class="keyboard-reminder" id="keyboard-reminder" lang="en">
+        Please use your keyboard to play the game.
+    </div>
 
     <!-- Controls Help -->
     <div class="controls-info">
@@ -16,6 +61,28 @@
         <kbd>Enter</kbd> Check / Select &nbsp;
         <kbd>Esc</kbd> Pause / Back
     </div>
+
+    <script>
+        // Flash keyboard reminder when decorative buttons are clicked
+        document.querySelectorAll('.dpad, .pd-btn, .menu-btn').forEach(el => {
+            el.addEventListener('click', () => {
+                const reminder = document.getElementById('keyboard-reminder');
+                reminder.classList.remove('flash');
+                void reminder.offsetWidth;
+                reminder.classList.add('flash');
+            });
+        });
+
+        // Crank spin animation on left/right key press
+        let crankFlipped = false;
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                crankFlipped = !crankFlipped;
+                document.querySelector('.crank-flipper')
+                    .style.setProperty('--crank-flip', crankFlipped ? '-1' : '1');
+            }
+        });
+    </script>
 
     <script type="module" src="main.js?v=3"></script>
 </body>

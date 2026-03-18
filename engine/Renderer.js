@@ -906,8 +906,8 @@ export class Renderer {
         const boxX = Config.NG_BOX_X;
         const boxY = Config.NG_BOX_Y;
         const shadowOff = Config.NG_BOX_SHADOW_OFFSET;
-        const boxWidth = 300;
-        const boxHeight = 100;
+        const boxWidth = Config.NG_BOX_WIDTH;
+        const boxHeight = Config.NG_BOX_HEIGHT;
 
         // Shadow
         this.fillRectDither(boxX + shadowOff, boxY + shadowOff + 1, boxWidth, boxHeight, 0.5);
@@ -932,14 +932,15 @@ export class Renderer {
 
         // Text centered in box
         ctx.fillStyle = '#fff';
-        ctx.font = '16px monospace';
+        const fontSize = Config.NG_FONT_SIZE;
+        ctx.font = `${fontSize}px monospace`;
         const w1 = ctx.measureText(line1).width;
         const w2 = ctx.measureText(line2).width;
-        const lineSpacing = 4;
-        const textH = 16 * 2 + lineSpacing;
-        const startY = boxY + Math.floor((boxHeight - textH) / 2) + 14;
+        const lineSpacing = Config.NG_LINE_SPACING;
+        const textH = fontSize * 2 + lineSpacing;
+        const startY = boxY + Math.floor((boxHeight - textH) / 2) + fontSize - 2;
         ctx.fillText(line1, boxX + Math.floor((boxWidth - w1) / 2), startY);
-        ctx.fillText(line2, boxX + Math.floor((boxWidth - w2) / 2), startY + 16 + lineSpacing);
+        ctx.fillText(line2, boxX + Math.floor((boxWidth - w2) / 2), startY + fontSize + lineSpacing);
     }
 
     _drawPauseScreen(state) {

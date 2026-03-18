@@ -43,7 +43,11 @@ export const Config = {
     // NG message box
     NG_BOX_X: 44,
     NG_BOX_Y: 40,
+    NG_BOX_WIDTH: 340,
+    NG_BOX_HEIGHT: 120,
     NG_BOX_SHADOW_OFFSET: 12,
+    NG_FONT_SIZE: 24,
+    NG_LINE_SPACING: 6,
 
     // Slide animations
     SLIDE_OUT_DURATION: 15,
