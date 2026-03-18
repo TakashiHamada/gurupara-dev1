@@ -11,6 +11,17 @@
     /* 四隅の穴（ネジ）の大きさ */
     --screw-size: 30px;
 
+    /* スピーカー */
+    --speaker-width: 18px;
+    --speaker-height: 90px;
+    --speaker-top: 104px;
+    --speaker-right: 14px;
+    --speaker-radius: 8px;
+    --speaker-dot-size: 4px;     /* 穴の大きさ */
+    --speaker-dot-gap: 6px;      /* 穴の間隔（中心から中心） */
+    --speaker-dot-color: #3f3f3f;
+    --speaker-bg-color: #626262;     /* 背景色 */
+
     /* メニューボタン（画面右横） */
     --menu-btn-size: 32px;
     --menu-btn-top: 50px;
@@ -126,18 +137,20 @@ body {
 /* ===== Speaker Grille ===== */
 .speaker {
     position: absolute;
-    top: 130px;
-    right: 9px;
-    width: 12px;
-    height: 55px;
-    background: repeating-linear-gradient(
-        to bottom,
-        transparent 0px,
-        transparent 5px,
-        #7a6200 5px,
-        #7a6200 7px
-    );
-    border-radius: 2px;
+    top: var(--speaker-top);
+    right: var(--speaker-right);
+    width: var(--speaker-width);
+    height: var(--speaker-height);
+    border-radius: var(--speaker-radius);
+    background-color: var(--speaker-bg-color);
+    background-image:
+        radial-gradient(
+            circle,
+            var(--speaker-dot-color) calc(var(--speaker-dot-size) / 2),
+            transparent calc(var(--speaker-dot-size) / 2)
+        );
+    background-size: var(--speaker-dot-gap) var(--speaker-dot-gap);
+    background-position: center center;
 }
 
 /* ===== Menu Button（画面右横） ===== */
