@@ -41,10 +41,17 @@
             <!-- Crank -->
             <div class="crank-base"></div>
             <div class="crank-rotator">
-                <div class="crank-handle"></div>
-                <div class="crank-arm"></div>
+                <div class="crank-flipper">
+                    <div class="crank-handle"></div>
+                    <div class="crank-arm"></div>
+                </div>
             </div>
         </div>
+    </div>
+
+    <!-- Keyboard reminder -->
+    <div class="keyboard-reminder" id="keyboard-reminder">
+        Please use your keyboard to play the game.
     </div>
 
     <!-- Controls Help -->
@@ -54,6 +61,28 @@
         <kbd>Enter</kbd> Check / Select &nbsp;
         <kbd>Esc</kbd> Pause / Back
     </div>
+
+    <script>
+        // Flash keyboard reminder when decorative buttons are clicked
+        document.querySelectorAll('.dpad, .pd-btn, .menu-btn').forEach(el => {
+            el.addEventListener('click', () => {
+                const reminder = document.getElementById('keyboard-reminder');
+                reminder.classList.remove('flash');
+                void reminder.offsetWidth;
+                reminder.classList.add('flash');
+            });
+        });
+
+        // Crank spin animation on left/right key press
+        let crankFlipped = false;
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                crankFlipped = !crankFlipped;
+                document.querySelector('.crank-flipper')
+                    .style.setProperty('--crank-flip', crankFlipped ? '-1' : '1');
+            }
+        });
+    </script>
 
     <script type="module" src="main.js?v=3"></script>
 </body>
