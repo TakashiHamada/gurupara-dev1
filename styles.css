@@ -1,3 +1,41 @@
+/* ===== 調整パラメーター ===== */
+:root {
+    /* 画面に対する黄色マージン（左・上・右） */
+    --margin-left: 8px;
+    --margin-top: 8px;
+    --margin-right: 46px;   /* 右はスピーカー分やや広め */
+
+    /* 画面の黒枠（ベゼル）の幅 */
+    --bezel-width: 18px;
+
+    /* 四隅の穴（ネジ）の大きさ */
+    --screw-size: 30px;
+
+    /* メニューボタン（画面右横） */
+    --menu-btn-size: 32px;
+    --menu-btn-top: 50px;
+    --menu-btn-right: 8px;
+
+    /* ロックスイッチ（上面から突出する長方形） */
+    --lock-width: 60px;
+    --lock-height: 8px;
+    --lock-right: 60px;
+
+    /* 十字キー（D-pad） */
+    --dpad-size: 130px;        /* 全体サイズ */
+    --dpad-top: 320px;         /* 上位置 */
+    --dpad-left: 45px;         /* 左位置 */
+    --dpad-arm-width: 29%;     /* 腕の太さ（全体に対する%） */
+    --dpad-arm-radius: 16px;    /* 腕の角丸 */
+
+    /* A, B ボタン */
+    --ab-btn-size: 58px;
+    --btn-b-top: 325px;
+    --btn-b-left: 265px;
+    --btn-a-top: 325px;
+    --btn-a-left: 360px;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -5,26 +43,260 @@
 }
 
 body {
-    background: #222;
+    background: #2a2a2a;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     font-family: 'Segoe UI', system-ui, sans-serif;
+    overflow-x: hidden;
+}
+
+/* ===== Playdate Wrapper (centers device + crank) ===== */
+.playdate-wrapper {
+    padding-right: 58px;
+}
+
+/* ===== Playdate Device Body ===== */
+.playdate-device {
+    position: relative;
+    width: calc(400 * 1px + var(--bezel-width) * 2 + var(--margin-left) + var(--margin-right));
+    height: 490px;
+    background: linear-gradient(165deg, #fad440 0%, #f0b820 100%);
+    border-radius: 16px;
+    box-shadow:
+        0 6px 24px rgba(0, 0, 0, 0.5),
+        0 1px 4px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    overflow: visible;
+}
+
+/* ===== Screen Bezel ===== */
+.screen-bezel {
+    position: absolute;
+    top: var(--margin-top);
+    left: var(--margin-left);
+    width: calc(400px + var(--bezel-width) * 2);
+    height: calc(240px + var(--bezel-width) * 2);
+    background: #111;
+    border-radius: 10px;
+    padding: var(--bezel-width);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
 #game-canvas {
     display: block;
-    width: 800px;
-    height: 480px;
+    width: 400px;
+    height: 240px;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     background: #fff;
-    border: 2px solid #444;
+    border-radius: 3px;
 }
 
-/* Controls Info */
+/* ===== Corner Screws (Phillips head) ===== */
+.screw {
+    position: absolute;
+    width: var(--screw-size);
+    height: var(--screw-size);
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 38%, #999, #555);
+    box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.5),
+        0 1px 1px rgba(255, 255, 255, 0.15);
+    z-index: 10;
+}
+/* 内側の暗い円 */
+.screw::after {
+    content: '';
+    position: absolute;
+    width: 50%;
+    height: 50%;
+    top: 25%;
+    left: 25%;
+    border-radius: 50%;
+    background: radial-gradient(circle, #444, #555);
+}
+.screw-tl { top: 10px; left: 10px; }
+.screw-tr { top: 10px; right: 10px; }
+.screw-bl { bottom: 10px; left: 10px; }
+.screw-br { bottom: 10px; right: 10px; }
+
+/* ===== Speaker Grille ===== */
+.speaker {
+    position: absolute;
+    top: 130px;
+    right: 9px;
+    width: 12px;
+    height: 55px;
+    background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 5px,
+        #7a6200 5px,
+        #7a6200 7px
+    );
+    border-radius: 2px;
+}
+
+/* ===== Menu Button（画面右横） ===== */
+.menu-btn {
+    position: absolute;
+    top: var(--menu-btn-top);
+    right: var(--menu-btn-right);
+    width: var(--menu-btn-size);
+    height: var(--menu-btn-size);
+    border-radius: 50%;
+    background: linear-gradient(to bottom, #fad440, #e8b820);
+    border: 2px solid #d48c00;
+    box-shadow:
+        0 2px 3px rgba(0, 0, 0, 0.25),
+        inset 0 1px 1px rgba(255, 255, 255, 0.25);
+}
+.menu-btn::after {
+    content: '';
+    position: absolute;
+    width: 55%;
+    height: 55%;
+    top: 22.5%;
+    left: 22.5%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+}
+
+/* ===== Lock Switch（上面から突出する長方形スイッチ） ===== */
+.lock-btn {
+    position: absolute;
+    top: calc(-1 * var(--lock-height));
+    right: var(--lock-right);
+    width: var(--lock-width);
+    height: var(--lock-height);
+    border-radius: 2px 2px 0 0;
+    background: linear-gradient(to bottom, #888, #666);
+    box-shadow:
+        0 -1px 2px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* ===== D-pad ===== */
+.dpad {
+    position: absolute;
+    top: var(--dpad-top);
+    left: var(--dpad-left);
+    width: var(--dpad-size);
+    height: var(--dpad-size);
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
+}
+.dpad-h,
+.dpad-v {
+    position: absolute;
+    background: linear-gradient(to bottom, #fce048, #e8b418);
+    border-radius: var(--dpad-arm-radius);
+}
+.dpad-h {
+    width: 100%;
+    height: var(--dpad-arm-width);
+    top: calc((100% - var(--dpad-arm-width)) / 2);
+    left: 0;
+}
+.dpad-v {
+    width: var(--dpad-arm-width);
+    height: 100%;
+    top: 0;
+    left: calc((100% - var(--dpad-arm-width)) / 2);
+}
+/* Center circle */
+.dpad::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 70%);
+    z-index: 2;
+}
+
+/* ===== A / B Buttons ===== */
+.pd-btn {
+    position: absolute;
+    width: var(--ab-btn-size);
+    height: var(--ab-btn-size);
+    border-radius: 50%;
+    background: linear-gradient(to bottom, #fad440, #e8b820);
+    border: 2px solid #d48c00;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+        0 2px 3px rgba(0, 0, 0, 0.25),
+        inset 0 1px 1px rgba(255, 255, 255, 0.25);
+    z-index: 1;
+}
+/* ボタン中央の白い丸 + 黄色文字 */
+.pd-btn span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 55%;
+    height: 55%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    font-weight: bold;
+    color: #d49000;
+    pointer-events: none;
+    user-select: none;
+}
+.btn-b {
+    top: var(--btn-b-top);
+    left: var(--btn-b-left);
+}
+.btn-a {
+    top: var(--btn-a-top);
+    left: var(--btn-a-left);
+}
+
+/* ===== Crank Assembly ===== */
+.crank-base {
+    position: absolute;
+    top: 144px;
+    right: -6px;
+    width: 14px;
+    height: 24px;
+    background: linear-gradient(to right, #aaa, #ccc, #aaa);
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    z-index: 5;
+}
+.crank-arm {
+    position: absolute;
+    top: 153px;
+    right: -44px;
+    width: 38px;
+    height: 7px;
+    background: linear-gradient(to bottom, #ccc, #999);
+    border-radius: 1px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    z-index: 4;
+}
+.crank-handle {
+    position: absolute;
+    top: 139px;
+    right: -58px;
+    width: 15px;
+    height: 34px;
+    background: linear-gradient(165deg, #fad440, #e8b820);
+    border-radius: 7px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    z-index: 4;
+}
+
+/* ===== Controls Help ===== */
 .controls-info {
     margin-top: 16px;
     color: rgba(255, 255, 255, 0.5);
@@ -32,7 +304,6 @@ body {
     text-align: center;
     line-height: 1.6;
 }
-
 .controls-info kbd {
     background: rgba(255, 255, 255, 0.15);
     padding: 2px 6px;

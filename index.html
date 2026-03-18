@@ -7,7 +7,43 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <canvas id="game-canvas" width="400" height="240" tabindex="0"></canvas>
+    <div class="playdate-wrapper">
+        <div class="playdate-device">
+            <!-- Corner screws (左上はなし) -->
+            <div class="screw screw-tr"></div>
+            <div class="screw screw-bl"></div>
+            <div class="screw screw-br"></div>
+
+            <!-- Screen with black bezel -->
+            <div class="screen-bezel">
+                <canvas id="game-canvas" width="400" height="240" tabindex="0"></canvas>
+            </div>
+
+            <!-- Speaker grille -->
+            <div class="speaker"></div>
+
+            <!-- Menu button (画面右横) -->
+            <div class="menu-btn"></div>
+
+            <!-- Lock button (右上) -->
+            <div class="lock-btn"></div>
+
+            <!-- D-pad -->
+            <div class="dpad">
+                <div class="dpad-h"></div>
+                <div class="dpad-v"></div>
+            </div>
+
+            <!-- A / B Buttons -->
+            <div class="pd-btn btn-b"><span>B</span></div>
+            <div class="pd-btn btn-a"><span>A</span></div>
+
+            <!-- Crank -->
+            <div class="crank-base"></div>
+            <div class="crank-arm"></div>
+            <div class="crank-handle"></div>
+        </div>
+    </div>
 
     <!-- Controls Help -->
     <div class="controls-info">
