@@ -127,4 +127,3 @@ All visual parameters are exposed as CSS custom properties for easy tuning:
 ### Decorative Button Click
 
 * Clicking D-pad, A/B, or menu button flashes a "Please use your keyboard" reminder below the device
-* Reference photo: `/Users/takashi/Desktop/Playdate_front-view.png`

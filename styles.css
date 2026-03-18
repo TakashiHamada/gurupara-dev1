@@ -46,6 +46,12 @@
     --btn-a-top: 325px;
     --btn-a-left: 360px;
 
+    /* Playdate Wrapper */
+    --wrapper-padding-right: 58px;   /* クランク分の余白 */
+
+    /* キーボードリマインダー */
+    --reminder-margin-right: 110px;  /* デバイスに対する右方向オフセット */
+
     /* クランク */
     --crank-pivot-y: 260px;            /* ピボット（回転中心）のY位置 */
     --crank-pivot-offset: -6px;         /* ピボットのデバイス右端からの距離 */
@@ -90,7 +96,7 @@ body {
 
 /* ===== Playdate Wrapper (centers device + crank) ===== */
 .playdate-wrapper {
-    padding-right: 58px;
+    padding-right: var(--wrapper-padding-right);
 }
 
 /* ===== Playdate Device Body ===== */
@@ -363,7 +369,7 @@ body {
 /* ===== Keyboard Reminder ===== */
 .keyboard-reminder {
     margin-top: 12px;
-    margin-right: 110px;
+    margin-right: var(--reminder-margin-right);
     color: rgba(255, 255, 255, 0.6);
     font-size: 20px;
     text-align: center;
@@ -376,6 +382,15 @@ body {
     0%   { color: #f5c524; transform: scale(1.15); }
     30%  { color: #f5c524; transform: scale(1.15); }
     100% { color: rgba(255, 255, 255, 0.6); transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .keyboard-reminder.flash {
+        animation: none;
+    }
+    .crank-flipper {
+        transition: none;
+    }
 }
 
 /* ===== Decorative buttons cursor ===== */
