@@ -45,6 +45,30 @@
     --btn-b-left: 265px;
     --btn-a-top: 325px;
     --btn-a-left: 360px;
+
+    /* クランク */
+    --crank-pivot-y: 260px;            /* ピボット（回転中心）のY位置 */
+    --crank-pivot-offset: -6px;         /* ピボットのデバイス右端からの距離 */
+    --crank-base-width: 9px;          /* ヒンジ台座の幅 */
+    --crank-base-height: 48px;         /* ヒンジ台座の高さ */
+    --crank-base-offset: -9px;         /* ヒンジ台座の右位置（負=はみ出し） */
+    --crank-arm-length: 36px;          /* アームの長さ（横方向） */
+    --crank-arm-height: 200px;          /* アームの高さ（縦長の長方形） */
+    --crank-handle-width: 70px;        /* ハンドルの幅 */
+    --crank-handle-height: 50px;       /* ハンドルの高さ */
+    --crank-handle-radius: 2px;       /* ハンドルの角丸 */
+    --crank-base-color: #464646;          /* ヒンジ台座の色 */
+    --crank-arm-color-top: #8a8a8a;       /* アームのグラデーション上端 */
+    --crank-arm-color-mid: #5a5a5a;       /* アームのグラデーション中間 */
+    --crank-arm-color-bottom: #5a5a5a;    /* アームのグラデーション下端 */
+    --crank-handle-color: #e8b820;     /* ハンドルの色 */
+    --crank-handle-offset-x: 53px;      /* ハンドルのX方向オフセット（正=右） */
+    --crank-handle-offset-y: 74px;      /* ハンドルのY方向オフセット（正=下） */
+    --crank-arm-offset-x: -1px;         /* アームのX方向オフセット（正=右） */
+    --crank-arm-offset-y: 20px;         /* アームのY方向オフセット（正=下） */
+    --crank-adjust-x: 0px;             /* 回転グループのX微調整（正=右） */
+    --crank-adjust-y: 0px;             /* 回転グループのY微調整（正=下） */
+    --crank-rotation: 0deg;            /* X軸回転角度（0=正面、90=奥向き、180=裏、270=手前） */
 }
 
 * {
@@ -275,38 +299,60 @@ body {
 }
 
 /* ===== Crank Assembly ===== */
+/* ヒンジ台座（固定） */
 .crank-base {
     position: absolute;
-    top: 144px;
-    right: -6px;
-    width: 14px;
-    height: 24px;
-    background: linear-gradient(to right, #aaa, #ccc, #aaa);
+    top: calc(var(--crank-pivot-y) - var(--crank-base-height) / 2);
+    right: var(--crank-base-offset);
+    width: var(--crank-base-width);
+    height: var(--crank-base-height);
+    background: var(--crank-base-color);
     border-radius: 2px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     z-index: 5;
 }
-.crank-arm {
+/* 回転グループ — X軸回転、ピボットはアーム下端（ヒンジ接合部） */
+/*
+    構造（上から下）:
+    [ハンドル] ← アーム上端
+    [アーム  ] ← 縦長の長方形
+    [ヒンジ  ] ← アーム下端 = ピボット（回転中心）
+*/
+.crank-rotator {
     position: absolute;
-    top: 153px;
-    right: -44px;
-    width: 38px;
-    height: 7px;
-    background: linear-gradient(to bottom, #ccc, #999);
-    border-radius: 1px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    top: calc(var(--crank-pivot-y) + var(--crank-adjust-y));
+    left: calc(100% + var(--crank-pivot-offset) + var(--crank-adjust-x));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translateY(-100%) perspective(300px) rotateX(var(--crank-rotation));
+    transform-origin: center bottom;
     z-index: 4;
 }
+/* ハンドル（アームの上端） */
 .crank-handle {
-    position: absolute;
-    top: 139px;
-    right: -58px;
-    width: 15px;
-    height: 34px;
-    background: linear-gradient(165deg, #fad440, #e8b820);
-    border-radius: 7px;
+    width: var(--crank-handle-width);
+    height: var(--crank-handle-height);
+    background: var(--crank-handle-color);
+    border-radius: var(--crank-handle-radius);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-    z-index: 4;
+    transform: translate(var(--crank-handle-offset-x), var(--crank-handle-offset-y));
+}
+/* アーム（縦長の長方形、下端がヒンジに接続） */
+.crank-arm {
+    width: var(--crank-arm-length);
+    height: var(--crank-arm-height);
+    background: linear-gradient(
+        to bottom,
+        var(--crank-arm-color-top),
+        var(--crank-arm-color-mid),
+        var(--crank-arm-color-bottom)
+    );
+    border-radius: 3px;
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transform: translate(var(--crank-arm-offset-x), var(--crank-arm-offset-y));
 }
 
 /* ===== Controls Help ===== */
