@@ -153,7 +153,6 @@ body {
     border-radius: 50%;
     background: radial-gradient(circle, #444, #555);
 }
-.screw-tl { top: 10px; left: 10px; }
 .screw-tr { top: 10px; right: 10px; }
 .screw-bl { bottom: 10px; left: 10px; }
 .screw-br { bottom: 10px; right: 10px; }
