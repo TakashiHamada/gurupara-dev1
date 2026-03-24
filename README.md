@@ -38,11 +38,22 @@
 
 ### 起動方法
 
+以下のいずれかの方法でローカルサーバーを起動してください。
+ES6モジュールを使用しているため、`index.html` を直接ブラウザで開くとCORSエラーが発生します。
+
+**方法1: live-server（ホットリロード対応）**
+
 ```bash
-npx live-server --port=8000 --no-browser
+npx live-server --port=8000
 ```
 
-ブラウザで [http://localhost:8000](http://localhost:8000) を開いてプレイできます。
+**方法2: Python（macOS標準）**
+
+```bash
+python3 -m http.server 8000
+```
+
+いずれの場合も、ブラウザで [http://localhost:8000](http://localhost:8000) を開いてプレイできます。
 
 ## プロジェクト構成
 
