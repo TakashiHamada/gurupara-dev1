@@ -1,77 +1,77 @@
-# Flip-Flap Crank Demo (Web)
+# Flip-Flap Crank デモ (Web版)
 
-A web-based demo of **"GuruPara!" (Flip-Flap Crank)** — a page-flipping puzzle game originally developed for the [Playdate](https://play.date/) handheld console. This demo showcases 3 stages (Tutorial + 2 stages) playable directly in the browser.
+[Playdate](https://play.date/) 向けパズルゲーム **「グルパラ！」(Flip-Flap Crank)** のWebデモ版です。シャッフルされたアニメーションのコマを正しい順番に並べ替えるパズルゲームで、ブラウザ上で3ステージ（チュートリアル＋2ステージ）をプレイできます。
 
-## Game Overview
+## ゲーム概要
 
-Flip-Flap Crank is a puzzle game where players flip through shuffled animation frames and rearrange them into the correct order. The goal is to restore each animation sequence by grabbing, moving, and placing frames in the right positions.
+バラバラに並んだアニメーションのコマをめくって移動し、正しい順番に並べ替えることが目的です。ページをめくる操作とコマを掴んで入れ替える操作を組み合わせて、アニメーションを完成させましょう。
 
-## Demo
+## デモの流れ
 
-- **Title Screen** → Start Game
-- **Stage 0** — Tutorial with a 10-step progressive guide
-- **Stage 1 & Stage 2** — 9 frames each, puzzle-style gameplay
-- **Thank You Screen** — Displayed after clearing all stages
+1. **タイトル画面** → ゲームスタート
+2. **ステージ0（チュートリアル）** — 10段階の操作ガイド付き
+3. **ステージ1・ステージ2** — 各9コマのパズルステージ
+4. **サンキュー画面** — 全ステージクリア後に表示
 
-## Controls
+## 操作方法
 
-| Action         | Keyboard          | Gamepad              |
-| -------------- | ----------------- | -------------------- |
-| Flip pages     | `←` / `→`         | D-pad Left / Right   |
-| Grab / Release | `Space` (hold)    | A Button             |
-| Check / Select | `Enter`           | B Button             |
-| Pause / Back   | `Backspace` / `Esc` | X Button           |
+| 操作           | キーボード            | ゲームパッド         |
+| -------------- | -------------------- | -------------------- |
+| ページめくり    | `←` / `→`           | 十字キー 左 / 右     |
+| つかむ / はなす | `Space`（長押し）     | Aボタン              |
+| チェック / 決定 | `Enter`              | Bボタン              |
+| ポーズ / 戻る   | `Backspace` / `Esc` | Xボタン              |
 
-## Tech Stack
+## 技術スタック
 
-- **Vanilla JavaScript** (ES6+ modules) — no frameworks or bundlers
-- **HTML5 Canvas** (2D context, 400×240 resolution)
-- **Web Audio API** for sound effects and BGM
-- **CSS3** for the Playdate device frame UI
+- **Vanilla JavaScript**（ES6+ モジュール） — フレームワーク・バンドラー不使用
+- **HTML5 Canvas**（2Dコンテキスト、400×240 解像度）
+- **Web Audio API** — 効果音・BGM再生
+- **CSS3** — Playdate本体フレームのUI再現
 
-## Getting Started
+## ローカル環境での起動
 
-### Prerequisites
+### 前提条件
 
-- [Node.js](https://nodejs.org/) (for `npx`)
-- A modern web browser (Chrome, Firefox, Safari, Edge)
+- [Node.js](https://nodejs.org/)（`npx` 実行用）
+- モダンブラウザ（Chrome、Firefox、Safari、Edge）
 
-### Run Locally
+### 起動方法
 
 ```bash
 npx live-server --port=8000 --no-browser
 ```
 
-Then open [http://localhost:8000](http://localhost:8000) in your browser.
+ブラウザで [http://localhost:8000](http://localhost:8000) を開いてプレイできます。
 
-## Project Structure
+## プロジェクト構成
 
 ```
-├── index.html             # Entry point (Playdate frame + canvas)
-├── main.js                # Game loop, scene management, game logic
-├── styles.css             # Playdate device frame and layout
+├── index.html             # エントリーポイント（Playdateフレーム + Canvas）
+├── main.js                # ゲームループ、シーン管理、ゲームロジック
+├── styles.css             # Playdate本体フレームとレイアウト
 ├── engine/
-│   ├── Config.js          # All tunable parameters
-│   ├── Renderer.js        # Canvas drawing (title, game, selection, UI)
-│   ├── GameState.js       # Game state and settings persistence
-│   ├── InputHandler.js    # Keyboard + gamepad input handling
-│   ├── PuzzleEngine.js    # Frame shuffling and order validation
-│   ├── AssetLoader.js     # Image asset loading
-│   ├── Sound.js           # Web Audio API (SE + BGM)
-│   └── Transition.js      # Page-turn screen transitions
+│   ├── Config.js          # 全チューニングパラメータ
+│   ├── Renderer.js        # Canvas描画（タイトル、ゲーム、選択、UI）
+│   ├── GameState.js       # ゲーム状態管理・設定の永続化
+│   ├── InputHandler.js    # キーボード・ゲームパッド入力処理
+│   ├── PuzzleEngine.js    # コマのシャッフルと順序判定
+│   ├── AssetLoader.js     # 画像アセットの読み込み
+│   ├── Sound.js           # Web Audio API（効果音・BGM）
+│   └── Transition.js      # ページめくり画面遷移
 └── Source/
-    ├── images/            # Animation frame images
+    ├── images/            # アニメーションフレーム画像
     │   ├── TitleAnimation/
     │   ├── MainGameAnimation/
     │   ├── SelectionAnimation/
     │   └── AnswerAnimation/
-    └── sounds/            # Sound effects and BGM
+    └── sounds/            # 効果音・BGMファイル
 ```
 
-## License
+## ライセンス
 
 All rights reserved.
 
-## Copyright
+## 著作権
 
 © 2026 GIFT TEN INDUSTRY.K.K. All rights reserved.
