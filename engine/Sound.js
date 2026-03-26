@@ -52,6 +52,12 @@ export class Sound {
 
         this.loaded = false;
 
+        // Master volume (user-facing control)
+        this.masterVolume = 1.0;
+        this._muted = false;
+        this._preMuteVolume = 1.0;
+        this._bgmBaseVolume = 0;
+
         // User interaction unlock
         this._interacted = false;
         const onInteract = () => {
@@ -128,7 +134,7 @@ export class Sound {
 
         const source = ctx.createBufferSource();
         const gain = ctx.createGain();
-        gain.gain.value = Config.SE_VOLUME;
+        gain.gain.value = Config.SE_VOLUME * this.masterVolume;
         source.buffer = buffer;
         source.connect(gain);
         gain.connect(ctx.destination);
@@ -175,7 +181,7 @@ export class Sound {
 
         const source = ctx.createBufferSource();
         const gain = ctx.createGain();
-        gain.gain.value = Config.SE_VOLUME;
+        gain.gain.value = Config.SE_VOLUME * this.masterVolume;
         source.buffer = buffer;
         source.connect(gain);
         gain.connect(ctx.destination);
@@ -206,7 +212,8 @@ export class Sound {
         this.currentBGMPath = path;
         this.bgmAudio = new Audio(path);
         this.bgmAudio.loop = true;
-        this.bgmAudio.volume = Config.BGM_VOLUME;
+        this._bgmBaseVolume = Config.BGM_VOLUME;
+        this.bgmAudio.volume = this._bgmBaseVolume * this.masterVolume;
         this.bgmAudio.play().catch(() => {
             this._bgmPending = true;
         });
@@ -214,6 +221,7 @@ export class Sound {
 
     muteBGM() {
         this.bgmFade.active = false;
+        this._bgmBaseVolume = 0;
         if (this.bgmAudio) {
             this.bgmAudio.volume = 0;
         }
@@ -221,8 +229,9 @@ export class Sound {
 
     restoreBGMVolume() {
         this.bgmFade.active = false;
+        this._bgmBaseVolume = Config.BGM_VOLUME;
         if (this.bgmAudio) {
-            this.bgmAudio.volume = Config.BGM_VOLUME;
+            this.bgmAudio.volume = this._bgmBaseVolume * this.masterVolume;
         }
     }
 
@@ -274,7 +283,38 @@ export class Sound {
                 this.bgmFade.currentVolume = this.bgmFade.targetVolume;
                 this.bgmFade.active = false;
             }
-            this.bgmAudio.volume = Math.max(0, Math.min(1, this.bgmFade.currentVolume));
+            this._bgmBaseVolume = this.bgmFade.currentVolume;
+            this.bgmAudio.volume = Math.max(0, Math.min(1, this._bgmBaseVolume * this.masterVolume));
         }
+    }
+
+    // --- Master Volume (user-facing) ---
+
+    setMasterVolume(v) {
+        this.masterVolume = Math.max(0, Math.min(1, v));
+        if (this._muted && this.masterVolume > 0) {
+            this._muted = false;
+        }
+        if (this.bgmAudio) {
+            this.bgmAudio.volume = Math.max(0, Math.min(1, this._bgmBaseVolume * this.masterVolume));
+        }
+    }
+
+    toggleMute() {
+        if (this._muted) {
+            this.masterVolume = this._preMuteVolume;
+            this._muted = false;
+        } else {
+            this._preMuteVolume = this.masterVolume || 1.0;
+            this.masterVolume = 0;
+            this._muted = true;
+        }
+        if (this.bgmAudio) {
+            this.bgmAudio.volume = Math.max(0, Math.min(1, this._bgmBaseVolume * this.masterVolume));
+        }
+    }
+
+    get isMuted() {
+        return this._muted;
     }
 }

@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Start Overlay -->
+    <div class="start-overlay" id="start-overlay">
+        <button class="start-btn" id="start-btn" type="button" disabled>Loading...</button>
+    </div>
+
     <div class="playdate-wrapper">
         <div class="playdate-device">
             <!-- Corner screws (左上はなし) -->
@@ -47,6 +52,25 @@
                 </div>
             </div>
         </div>
+
+    </div>
+
+    <!-- Audio Controls (bottom-left corner) -->
+    <div class="audio-controls" id="audio-controls">
+        <button class="audio-mute-btn" id="audio-mute-btn" type="button" aria-label="Mute/Unmute">
+            <svg class="audio-icon audio-icon-on" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+            </svg>
+            <svg class="audio-icon audio-icon-off" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                <line x1="23" y1="9" x2="17" y2="15"/>
+                <line x1="17" y1="9" x2="23" y2="15"/>
+            </svg>
+        </button>
+        <input type="range" class="audio-slider" id="audio-slider"
+               min="0" max="100" value="100" aria-label="Volume">
     </div>
 
     <!-- Keyboard reminder -->

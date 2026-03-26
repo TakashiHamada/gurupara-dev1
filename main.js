@@ -79,18 +79,21 @@ class Game {
         this.targetFrameInterval = 1000 / 30;
     }
 
-    async init() {
-        console.log('[Game] init() starting...');
+    async preload() {
+        console.log('[Game] preload() starting...');
         await Promise.all([
             this.assets.loadAll(),
             this.sound.loadAll(),
         ]);
         console.log(`[Game] Assets loaded. titleImages:${this.assets.titleImages.length}, sound:${this.sound.loaded}`);
         console.log(`[Game] AnswerAnim images: good=${this.assets.answerAnimImages.good.length} bad=${this.assets.answerAnimImages.bad.length} near=${this.assets.answerAnimImages.near.length} sobad=${this.assets.answerAnimImages.sobad.length}`);
+    }
+
+    start() {
         this.sound.playBGM('title');
         this.running = true;
         this.lastFrameTime = performance.now();
-        console.log('[Game] init() complete, starting game loop');
+        console.log('[Game] start() — game loop beginning');
         requestAnimationFrame((t) => this.loop(t));
     }
 
@@ -1315,5 +1318,44 @@ class Game {
 // Boot
 window.addEventListener('DOMContentLoaded', () => {
     const game = new Game();
-    game.init();
+
+    const overlay = document.getElementById('start-overlay');
+    const startBtn = document.getElementById('start-btn');
+
+    // Preload assets while overlay is shown
+    game.preload().then(() => {
+        startBtn.disabled = false;
+        startBtn.textContent = 'Play Demo!';
+    });
+
+    startBtn.addEventListener('click', () => {
+        game.start();
+        overlay.classList.add('fade-out');
+        overlay.addEventListener('animationend', () => {
+            overlay.remove();
+        });
+    });
+
+    // Audio controls
+    const muteBtn = document.getElementById('audio-mute-btn');
+    const slider = document.getElementById('audio-slider');
+    const iconOn = muteBtn.querySelector('.audio-icon-on');
+    const iconOff = muteBtn.querySelector('.audio-icon-off');
+
+    function updateIcon() {
+        const muted = game.sound.isMuted || game.sound.masterVolume === 0;
+        iconOn.style.display = muted ? 'none' : '';
+        iconOff.style.display = muted ? '' : 'none';
+    }
+
+    muteBtn.addEventListener('click', () => {
+        game.sound.toggleMute();
+        slider.value = game.sound.masterVolume * 100;
+        updateIcon();
+    });
+
+    slider.addEventListener('input', () => {
+        game.sound.setMasterVolume(slider.value / 100);
+        updateIcon();
+    });
 });
