@@ -76,6 +76,7 @@ npx live-server --port=8000 --no-browser
 * **Tutorial text**: Uses keyboard terms ([Space], arrow keys, [Enter]) not Playdate terms
 * **Tutorial hint dismissal**: Check (Enter) is consumed by tutorial overlay and won't trigger game check on same frame
 * **Selection screen**: 3 tiles centered horizontally, main game frames for animation (not separate sprite sheets), scrolling dot background
+* **Catalog link button**: Canvas-drawn button below the tiles linking to the Playdate Catalog (styled to match the "Play Demo!" start button). Click is hit-tested against `Renderer.getCatalogButtonRect()`; only active on the selection screen when not paused. Tiles are shifted up via `SELECTION_TILE_Y_OFFSET` to make room.
 * **Hints**: Left (grab/check) and right (flip keys) appear/disappear together on idle timer; left hint hidden until tutorial step 8
 * **Check flash**: Semi-transparent black overlay (configurable alpha) instead of opaque
 * **Clear replay**: Esc replays animation with answer SE; result screen re-shows with congratulations SE and good animation

@@ -266,6 +266,12 @@ class Game {
 
         // Start game
         if (this.input.isCheckJustPressed()) {
+            // Leaving the selection screen: clear catalog button hover/press so the
+            // pointer cursor and hovered state don't linger into the game scene.
+            this.state.catalogHover = false;
+            this.state.catalogPressed = false;
+            this.canvas.style.cursor = '';
+
             const stageInfo = Config.STAGES.find(s => s.index === this.state.selectedIndex);
 
             if (!stageInfo) {
@@ -1357,7 +1363,7 @@ window.addEventListener('DOMContentLoaded', () => {
     game.canvas.addEventListener('mousemove', (e) => {
         const hovering = catalogActive() && catalogHitTest(e);
         game.state.catalogHover = hovering;
-        if (!hovering) game.state.catalogPressed = false;
+        if (!hovering) game.state.catalogPressed = false;  // leaving the button cancels a pending press
         game.canvas.style.cursor = hovering ? 'pointer' : '';
     });
 
@@ -1365,6 +1371,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (catalogActive() && catalogHitTest(e)) game.state.catalogPressed = true;
     });
 
+    // On window (not canvas): release the press even if the cursor left the button first
     window.addEventListener('mouseup', () => {
         game.state.catalogPressed = false;
     });

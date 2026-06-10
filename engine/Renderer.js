@@ -196,11 +196,12 @@ export class Renderer {
         if (state.isPaused) {
             this._drawSelectionPause(state);
         } else {
-            this._drawCatalogButton(state.catalogHover, state.catalogPressed);
+            this._drawCatalogButton(state);
         }
     }
 
-    // Button hitbox (shared by renderer and click handler)
+    // Public (no underscore): also used by main.js click/hover hit-testing,
+    // so the drawn button and the clickable area stay in sync from one source.
     getCatalogButtonRect() {
         const w = Config.SELECTION_CATALOG_BTN_W;
         const h = Config.SELECTION_CATALOG_BTN_H;
@@ -212,7 +213,9 @@ export class Renderer {
         };
     }
 
-    _drawCatalogButton(hovered, pressed) {
+    // Catalog link button, styled to match the "Play Demo!" start button.
+    // hover/press state comes from state.catalogHover / state.catalogPressed.
+    _drawCatalogButton(state) {
         const ctx = this.ctx;
         const { x, y, w, h } = this.getCatalogButtonRect();
         const r = Config.SELECTION_CATALOG_BTN_RADIUS;
@@ -221,10 +224,11 @@ export class Renderer {
         const cy = y + h / 2;
 
         // Hover grows, press shrinks (mirrors .start-btn :hover / :active scale)
-        const scale = pressed ? Config.SELECTION_CATALOG_PRESS_SCALE
-            : hovered ? Config.SELECTION_CATALOG_HOVER_SCALE : 1;
-        // Shadow deepens on hover, flattens on press (mirrors .start-btn box-shadow)
-        const shadowMul = pressed ? 0.5 : hovered ? 1.5 : 1;
+        const scale = state.catalogPressed ? Config.SELECTION_CATALOG_PRESS_SCALE
+            : state.catalogHover ? Config.SELECTION_CATALOG_HOVER_SCALE : 1;
+        // Shadow depth multiplier: press flattens (0.5x), hover deepens (1.5x),
+        // idle = 1x — mirrors the .start-btn box-shadow change across states.
+        const shadowMul = state.catalogPressed ? 0.5 : state.catalogHover ? 1.5 : 1;
 
         ctx.save();
         ctx.translate(cx, cy);
@@ -238,8 +242,7 @@ export class Renderer {
         const grad = ctx.createLinearGradient(0, y, 0, y + h);
         grad.addColorStop(0, Config.SELECTION_CATALOG_GRAD_TOP);
         grad.addColorStop(1, Config.SELECTION_CATALOG_GRAD_BOTTOM);
-        ctx.beginPath();
-        ctx.roundRect(x, y, w, h, r);
+        this._roundRect(x, y, w, h, r);  // shared helper (browser-compatible path)
         ctx.fillStyle = grad;
         ctx.fill();
 
@@ -249,8 +252,7 @@ export class Renderer {
         ctx.shadowOffsetY = 0;
         ctx.lineWidth = border;
         ctx.strokeStyle = Config.SELECTION_CATALOG_COLOR_BORDER;
-        ctx.beginPath();
-        ctx.roundRect(x + border / 2, y + border / 2, w - border, h - border, r - border / 2);
+        this._roundRect(x + border / 2, y + border / 2, w - border, h - border, Math.max(0, r - border / 2));
         ctx.stroke();
 
         // Label

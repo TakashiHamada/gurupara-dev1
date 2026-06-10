@@ -204,12 +204,12 @@ export const Config = {
     SELECTION_CURSOR_SIZE: 120,
     SELECTION_CURSOR_CORNER_LENGTH: 24,
     SELECTION_CURSOR_CORNER_WIDTH: 8,
-    SELECTION_TILE_Y_OFFSET: -18,  // shift tiles+cursor up to free space below
+    SELECTION_TILE_Y_OFFSET: -18,  // shift tiles+cursor up to make room for the catalog button below
 
     // Playdate Catalog link button (selection screen, below tiles)
     // Style matched to the "Play Demo!" start button (.start-btn in styles.css)
     SELECTION_CATALOG_URL: 'https://play.date/games/flip-flap-crank/',
-    SELECTION_CATALOG_LABEL: 'Playdate Catalog  ▶',
+    SELECTION_CATALOG_LABEL: 'Playdate Catalog  ▶',  // trailing spaces + ▶ are intentional spacing
     SELECTION_CATALOG_BTN_W: 220,
     SELECTION_CATALOG_BTN_H: 36,
     SELECTION_CATALOG_BTN_Y: 182,

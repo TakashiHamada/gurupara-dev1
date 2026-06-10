@@ -38,6 +38,10 @@ export class GameState {
         this.grabbedFrame = -1;
         this.isNewHiScore = false;
 
+        // Selection screen catalog button (updated by DOM mouse listeners in main.js)
+        this.catalogHover = false;
+        this.catalogPressed = false;
+
         // NG level
         this.ngLevel = "normal";
 
