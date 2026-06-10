@@ -153,7 +153,7 @@ export class Renderer {
         const stageCount = Config.STAGES.length;
         const totalW = stageCount * TILE + (stageCount - 1) * SPACING;
         const START_X = Math.floor((W - totalW) / 2);
-        const START_Y = Math.floor((H - TILE) / 2);
+        const START_Y = Math.floor((H - TILE) / 2) + Config.SELECTION_TILE_Y_OFFSET;
 
         for (let i = 0; i < stageCount; i++) {
             const stage = Config.STAGES[i];
@@ -192,10 +192,77 @@ export class Renderer {
         const cursorColors = ['#000', '#555', '#999', '#555'];
         this._drawCursorBracket(state.selectedIndex, START_X, START_Y, TILE, SPACING, stageCount, cursorColors[cursorCycle]);
 
-        // Pause overlay
+        // Pause overlay (or catalog link button when not paused)
         if (state.isPaused) {
             this._drawSelectionPause(state);
+        } else {
+            this._drawCatalogButton(state);
         }
+    }
+
+    // Public (no underscore): also used by main.js click/hover hit-testing,
+    // so the drawn button and the clickable area stay in sync from one source.
+    getCatalogButtonRect() {
+        const w = Config.SELECTION_CATALOG_BTN_W;
+        const h = Config.SELECTION_CATALOG_BTN_H;
+        return {
+            x: Math.floor((Config.SCREEN_WIDTH - w) / 2),
+            y: Config.SELECTION_CATALOG_BTN_Y,
+            w,
+            h,
+        };
+    }
+
+    // Catalog link button, styled to match the "Play Demo!" start button.
+    // hover/press state comes from state.catalogHover / state.catalogPressed.
+    _drawCatalogButton(state) {
+        const ctx = this.ctx;
+        const { x, y, w, h } = this.getCatalogButtonRect();
+        const r = Config.SELECTION_CATALOG_BTN_RADIUS;
+        const border = Config.SELECTION_CATALOG_BTN_BORDER;
+        const cx = x + w / 2;
+        const cy = y + h / 2;
+
+        // Hover grows, press shrinks (mirrors .start-btn :hover / :active scale)
+        const scale = state.catalogPressed ? Config.SELECTION_CATALOG_PRESS_SCALE
+            : state.catalogHover ? Config.SELECTION_CATALOG_HOVER_SCALE : 1;
+        // Shadow depth multiplier: press flattens (0.5x), hover deepens (1.5x),
+        // idle = 1x — mirrors the .start-btn box-shadow change across states.
+        const shadowMul = state.catalogPressed ? 0.5 : state.catalogHover ? 1.5 : 1;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(scale, scale);
+        ctx.translate(-cx, -cy);
+
+        // Body: yellow gradient with a soft drop shadow
+        ctx.shadowColor = Config.SELECTION_CATALOG_SHADOW_COLOR;
+        ctx.shadowBlur = Config.SELECTION_CATALOG_SHADOW_BLUR * shadowMul;
+        ctx.shadowOffsetY = Config.SELECTION_CATALOG_SHADOW_OFFSET_Y * shadowMul;
+        const grad = ctx.createLinearGradient(0, y, 0, y + h);
+        grad.addColorStop(0, Config.SELECTION_CATALOG_GRAD_TOP);
+        grad.addColorStop(1, Config.SELECTION_CATALOG_GRAD_BOTTOM);
+        this._roundRect(x, y, w, h, r);  // shared helper (browser-compatible path)
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Golden border (no shadow on the stroke/text)
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.lineWidth = border;
+        ctx.strokeStyle = Config.SELECTION_CATALOG_COLOR_BORDER;
+        this._roundRect(x + border / 2, y + border / 2, w - border, h - border, Math.max(0, r - border / 2));
+        ctx.stroke();
+
+        // Label
+        ctx.fillStyle = Config.SELECTION_CATALOG_COLOR_TEXT;
+        ctx.font = `bold ${Config.SELECTION_CATALOG_FONT_SIZE}px ${Config.SELECTION_CATALOG_FONT_FAMILY}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(Config.SELECTION_CATALOG_LABEL, cx, cy + 1);
+
+        ctx.restore();
     }
 
     _drawCursorBracket(selectedIndex, startX, startY, tileSize, spacing, cols, color) {

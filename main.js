@@ -224,6 +224,15 @@ class Game {
     }
 
     // --- Selection ---
+    // Clear catalog button hover/press and reset the cursor. Called whenever the
+    // button becomes inactive (leaving the selection screen or pausing) so the
+    // pointer cursor / hovered state doesn't linger.
+    _clearCatalogHover() {
+        this.state.catalogHover = false;
+        this.state.catalogPressed = false;
+        this.canvas.style.cursor = '';
+    }
+
     updateSelection() {
         // Thumbnail animation
         this.selectionAnimTimer++;
@@ -242,6 +251,7 @@ class Game {
 
         if (this.input.isPauseJustPressed()) {
             this.state.isPaused = true;
+            this._clearCatalogHover();  // button is hidden while paused; don't keep the pointer cursor
             this.sound.playEnable();
             return;
         }
@@ -266,6 +276,8 @@ class Game {
 
         // Start game
         if (this.input.isCheckJustPressed()) {
+            this._clearCatalogHover();  // leaving the selection screen for the game scene
+
             const stageInfo = Config.STAGES.find(s => s.index === this.state.selectedIndex);
 
             if (!stageInfo) {
@@ -1334,6 +1346,40 @@ window.addEventListener('DOMContentLoaded', () => {
         overlay.addEventListener('animationend', () => {
             overlay.remove();
         });
+    });
+
+    // Playdate Catalog link button (selection screen only)
+    const catalogActive = () =>
+        game.state.currentScene === Scene.SELECTION && !game.state.isPaused;
+
+    const catalogHitTest = (e) => {
+        const rect = game.canvas.getBoundingClientRect();
+        const cx = (e.clientX - rect.left) * (game.canvas.width / rect.width);
+        const cy = (e.clientY - rect.top) * (game.canvas.height / rect.height);
+        const b = game.renderer.getCatalogButtonRect();
+        return cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h;
+    };
+
+    game.canvas.addEventListener('click', (e) => {
+        if (catalogActive() && catalogHitTest(e)) {
+            window.open(Config.SELECTION_CATALOG_URL, '_blank', 'noopener');
+        }
+    });
+
+    game.canvas.addEventListener('mousemove', (e) => {
+        const hovering = catalogActive() && catalogHitTest(e);
+        game.state.catalogHover = hovering;
+        if (!hovering) game.state.catalogPressed = false;  // leaving the button cancels a pending press
+        game.canvas.style.cursor = hovering ? 'pointer' : '';
+    });
+
+    game.canvas.addEventListener('mousedown', (e) => {
+        if (catalogActive() && catalogHitTest(e)) game.state.catalogPressed = true;
+    });
+
+    // On window (not canvas): release the press even if the cursor left the button first
+    window.addEventListener('mouseup', () => {
+        game.state.catalogPressed = false;
     });
 
     // Audio controls
