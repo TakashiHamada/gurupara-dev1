@@ -224,6 +224,15 @@ class Game {
     }
 
     // --- Selection ---
+    // Clear catalog button hover/press and reset the cursor. Called whenever the
+    // button becomes inactive (leaving the selection screen or pausing) so the
+    // pointer cursor / hovered state doesn't linger.
+    _clearCatalogHover() {
+        this.state.catalogHover = false;
+        this.state.catalogPressed = false;
+        this.canvas.style.cursor = '';
+    }
+
     updateSelection() {
         // Thumbnail animation
         this.selectionAnimTimer++;
@@ -242,6 +251,7 @@ class Game {
 
         if (this.input.isPauseJustPressed()) {
             this.state.isPaused = true;
+            this._clearCatalogHover();  // button is hidden while paused; don't keep the pointer cursor
             this.sound.playEnable();
             return;
         }
@@ -266,11 +276,7 @@ class Game {
 
         // Start game
         if (this.input.isCheckJustPressed()) {
-            // Leaving the selection screen: clear catalog button hover/press so the
-            // pointer cursor and hovered state don't linger into the game scene.
-            this.state.catalogHover = false;
-            this.state.catalogPressed = false;
-            this.canvas.style.cursor = '';
+            this._clearCatalogHover();  // leaving the selection screen for the game scene
 
             const stageInfo = Config.STAGES.find(s => s.index === this.state.selectedIndex);
 

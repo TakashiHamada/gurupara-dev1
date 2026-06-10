@@ -209,7 +209,7 @@ export const Config = {
     // Playdate Catalog link button (selection screen, below tiles)
     // Style matched to the "Play Demo!" start button (.start-btn in styles.css)
     SELECTION_CATALOG_URL: 'https://play.date/games/flip-flap-crank/',
-    SELECTION_CATALOG_LABEL: 'Playdate Catalog  ▶',  // trailing spaces + ▶ are intentional spacing
+    SELECTION_CATALOG_LABEL: 'Playdate Catalog  ▶',  // the 2 spaces before ▶ are intentional spacing
     SELECTION_CATALOG_BTN_W: 220,
     SELECTION_CATALOG_BTN_H: 36,
     SELECTION_CATALOG_BTN_Y: 182,
