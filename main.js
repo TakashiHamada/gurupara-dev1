@@ -1336,6 +1336,39 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Playdate Catalog link button (selection screen only)
+    const catalogActive = () =>
+        game.state.currentScene === Scene.SELECTION && !game.state.isPaused;
+
+    const catalogHitTest = (e) => {
+        const rect = game.canvas.getBoundingClientRect();
+        const cx = (e.clientX - rect.left) * (game.canvas.width / rect.width);
+        const cy = (e.clientY - rect.top) * (game.canvas.height / rect.height);
+        const b = game.renderer.getCatalogButtonRect();
+        return cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h;
+    };
+
+    game.canvas.addEventListener('click', (e) => {
+        if (catalogActive() && catalogHitTest(e)) {
+            window.open(Config.SELECTION_CATALOG_URL, '_blank', 'noopener');
+        }
+    });
+
+    game.canvas.addEventListener('mousemove', (e) => {
+        const hovering = catalogActive() && catalogHitTest(e);
+        game.state.catalogHover = hovering;
+        if (!hovering) game.state.catalogPressed = false;
+        game.canvas.style.cursor = hovering ? 'pointer' : '';
+    });
+
+    game.canvas.addEventListener('mousedown', (e) => {
+        if (catalogActive() && catalogHitTest(e)) game.state.catalogPressed = true;
+    });
+
+    window.addEventListener('mouseup', () => {
+        game.state.catalogPressed = false;
+    });
+
     // Audio controls
     const muteBtn = document.getElementById('audio-mute-btn');
     const slider = document.getElementById('audio-slider');

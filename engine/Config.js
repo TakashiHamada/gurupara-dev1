@@ -204,6 +204,28 @@ export const Config = {
     SELECTION_CURSOR_SIZE: 120,
     SELECTION_CURSOR_CORNER_LENGTH: 24,
     SELECTION_CURSOR_CORNER_WIDTH: 8,
+    SELECTION_TILE_Y_OFFSET: -18,  // shift tiles+cursor up to free space below
+
+    // Playdate Catalog link button (selection screen, below tiles)
+    // Style matched to the "Play Demo!" start button (.start-btn in styles.css)
+    SELECTION_CATALOG_URL: 'https://play.date/games/flip-flap-crank/',
+    SELECTION_CATALOG_LABEL: 'Playdate Catalog  ▶',
+    SELECTION_CATALOG_BTN_W: 220,
+    SELECTION_CATALOG_BTN_H: 36,
+    SELECTION_CATALOG_BTN_Y: 182,
+    SELECTION_CATALOG_BTN_RADIUS: 10,
+    SELECTION_CATALOG_BTN_BORDER: 3,
+    SELECTION_CATALOG_FONT_SIZE: 17,
+    SELECTION_CATALOG_FONT_FAMILY: "'Segoe UI', system-ui, sans-serif",
+    SELECTION_CATALOG_GRAD_TOP: '#fce048',     // same yellow gradient as start button
+    SELECTION_CATALOG_GRAD_BOTTOM: '#f0b820',
+    SELECTION_CATALOG_COLOR_BORDER: '#d49000',
+    SELECTION_CATALOG_COLOR_TEXT: '#333',
+    SELECTION_CATALOG_SHADOW_COLOR: 'rgba(0, 0, 0, 0.4)',
+    SELECTION_CATALOG_SHADOW_BLUR: 12,
+    SELECTION_CATALOG_SHADOW_OFFSET_Y: 4,
+    SELECTION_CATALOG_HOVER_SCALE: 1.05,       // grow on hover (matches :hover)
+    SELECTION_CATALOG_PRESS_SCALE: 0.97,       // shrink on press (matches :active)
 
     // Game hints (bottom-left: grab/check, bottom-right: flip keys)
     HINT_IDLE_FRAMES: 60,
